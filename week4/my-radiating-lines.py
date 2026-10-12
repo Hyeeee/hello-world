@@ -122,7 +122,21 @@ myImage.save("myImage.png", bitmap_format="png")
 # myImage = myImage.resize((appWidth, appHeight), Image.ANTIALIAS)
 # convert the image to a Tkinter PhotoImage
 myImage = ImageTk.PhotoImage(myImage)
-# draw it to the app canvas
-canvas.create_image(0, 0, image=myImage, anchor="nw")
+# Place the image at the center of the canvas
+image_id = canvas.create_image(
+    appWidth / 2,
+    appHeight / 2,
+    image=myImage,
+    anchor="center",
+)
+
+
+# Move the image center to the mouse position
+def move_image(event):
+    canvas.coords(image_id, event.x, event.y)
+
+
+# Follow mouse movement without clicking
+canvas.bind("<Motion>", move_image)
 
 app.mainloop()
