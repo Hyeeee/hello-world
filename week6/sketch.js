@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v6)
+  DRUM — a minimal 3D world clock (v7)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -133,9 +133,11 @@ function setup() {
     c.fmt = new Intl.DateTimeFormat('en-GB', {
       timeZone: c.tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
     });
-    try {
-      c.offFmt = new Intl.DateTimeFormat('en-US', { timeZone: c.tz, timeZoneName: 'shortOffset' });
-    } catch (e) { c.offFmt = null; }
+    // full date + time in that zone, used to measure the difference from New York
+    c.fullFmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: c.tz, year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', hourCycle: 'h23',
+    });
     c.dayFmt = new Intl.DateTimeFormat('en-US', { timeZone: c.tz, weekday: 'short', day: '2-digit', month: 'short' });
   }
 
@@ -447,10 +449,29 @@ function getTime(city, date) {
   return { h: get('hour') % 24, m: get('minute'), s: get('second') };
 }
 
+// ---- time difference from New York ----
+const NY_FMT = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York', year: 'numeric', month: 'numeric', day: 'numeric',
+  hour: 'numeric', minute: 'numeric', hourCycle: 'h23',
+});
+
+// Read a formatter's date+time as if it were UTC, and return it in minutes.
+// Comparing two cities this way gives their difference in minutes.
+function wallClockMinutes(fmt, date) {
+  const parts = fmt.formatToParts(date);
+  const get = (type) => parseInt(parts.find((p) => p.type === type).value, 10);
+  const ms = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'));
+  return ms / 60000;
+}
+
+// e.g. Seoul -> "NYC +13H", London -> "NYC +4H", LA -> "NYC −3H", Mumbai -> "NYC +9:30H"
 function getOffset(city, date) {
-  if (!city.offFmt) return '';
-  const part = city.offFmt.formatToParts(date).find((p) => p.type === 'timeZoneName');
-  return part ? part.value.toUpperCase() : '';
+  const diff = wallClockMinutes(city.fullFmt, date) - wallClockMinutes(NY_FMT, date);
+  if (diff === 0) return 'NYC ±0H';
+  const sign = diff > 0 ? '+' : '−';
+  const h = floor(abs(diff) / 60);
+  const m = abs(diff) % 60;
+  return 'NYC ' + sign + h + (m ? ':' + nf(m, 2) : '') + 'H';
 }
 
 function isInside(b) {
