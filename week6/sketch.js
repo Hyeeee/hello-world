@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v14)
+  DRUM — a minimal 3D world clock (v15)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -49,6 +49,7 @@ let hitBoxes = [];        // clickable text areas (cities, buttons)
 let L;                    // screen layout, recalculated every frame (see computeLayout)
 let canHover = true;      // false on touch screens (no mouse to hover with)
 let pinchStart = 0, zoomStart = 1, lastTap = 0;
+let lastX = 0, lastY = 0;  // last pointer position (we measure drag distance ourselves)
 let pressX = 0, pressY = 0, dragging = false;
 
 // (no spaces in these lists — p5 wraps names with spaces in quotes, which breaks a list)
@@ -181,6 +182,9 @@ function draw() {
   const hoverYaw = canHover ? (mouseX / width - 0.5) * 0.35 * (1 - morph) : 0;
   // DIAL view looks straight down (90°), so the rings are perfect circles
   const basePitch = lerp(0.62, HALF_PI, morph);
+  // safety net: if a weird touch value ever slips in, reset instead of breaking the clock
+  if (!isFinite(dragYaw) || !isFinite(dragPitch)) { dragYaw = 0; dragPitch = 0; }
+  if (!isFinite(yaw) || !isFinite(pitch)) { yaw = 0; pitch = 0.6; }
   yaw = lerp(yaw, hoverYaw + dragYaw, 0.08);
   pitch = lerp(pitch, constrain(basePitch + dragPitch, 0.02, HALF_PI), 0.08);
   if (!dragging) {              // after you let go, the view floats back
@@ -188,6 +192,7 @@ function draw() {
     dragPitch *= 0.96;
   }
   morph = lerp(morph, viewDial ? 1 : 0, 0.07);
+  fitClock();
 
   drawDotGrid();
 
@@ -239,20 +244,21 @@ function computeLayout() {
 
   // --- header (city, big time, date) ---
   // on a portrait phone it moves BELOW the buttons
-  const head = { x: m, y: compact ? ctrl.y + ctrl.h + 22 : ctrl.y + 4, timeSize: compact || short ? 34 : 40 };
-  head.timeY = head.y + 18;
+  // the first header line (city name) sits on the same line as the icon buttons
+  const head = { x: m, y: ctrl.y + ctrl.h / 2 - 6, timeSize: compact || short ? 34 : 40 };
+  head.timeY = head.y + 22;
   head.subY = head.timeY + head.timeSize + 8;
   head.bottom = head.subY + 14;
   head.right = m + 230;                           // roughly how wide the header is
 
   // --- city list ---
-  const n = CITIES.length;
+  const n = visibleCities(compact).length;
   let cols;
   if (compact) cols = 3;
   else if ((width - m * 2) / n >= 84) cols = n;   // everything fits in one row
   else cols = ceil(n / 2);
   const rows = ceil(n / cols);
-  const list = { cols, rows, m, rowH: rows > 1 ? 72 : 52, gutter: compact ? 12 : 16 };  // more air between rows
+  const list = { count: n, cols, rows, m, rowH: rows > 1 ? 72 : 52, gutter: compact ? 12 : 16 };  // more air between rows
   list.colW = (width - m * 2) / cols;
   list.top = height - m - rows * list.rowH + 12;
 
@@ -268,10 +274,47 @@ function computeLayout() {
   const clock = {
     cx: (box.x1 + box.x2) / 2,
     cy: (box.y1 + box.y2) / 2,
-    unit: max(0.2, min(bw, bh) * 0.95 / 600),     // the clock is about 600 units across
+    unit: max(0.2, min(bw, bh) * 0.95 / 600),     // first guess; fitClock() refines it
+    box: { cx: (box.x1 + box.x2) / 2, cy: (box.y1 + box.y2) / 2, w: bw, h: bh },
   };
 
   return { compact, short, m, ctrl, head, list, clock };
+}
+
+// Phones show 6 cities (your city + the first 5); bigger screens show them all
+function visibleCities(compact) {
+  return compact ? CITIES.slice(0, 6) : CITIES;
+}
+
+// Center the clock on what is actually DRAWN, not on its math center.
+// A tilted drum looks lower than its center (the front of the bottom ring
+// swings down), so we project the rings once with the default view,
+// measure the box they cover on screen, then scale and move the clock so
+// that box sits in the middle of the free space.
+function fitClock() {
+  const saved = { yaw, pitch, zoom };
+  yaw = 0;
+  pitch = lerp(0.62, HALF_PI, morph);   // the default view (ignores dragging)
+  zoom = 1; cx = 0; cy = 0; unit = 1;
+
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+  // NESTED LOOPS: every ring x 24 points around it
+  for (const ring of rings) {
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * TWO_PI;
+      const p = project(ring.r * sin(a), ring.y, ring.r * cos(a));
+      x1 = min(x1, p.x); x2 = max(x2, p.x);
+      y1 = min(y1, p.y); y2 = max(y2, p.y);
+    }
+  }
+  ({ yaw, pitch, zoom } = saved);
+
+  const b = L.clock.box;
+  const pad = 30;                         // room for the numbers at the edge
+  unit = max(0.2, min(b.w / (x2 - x1 + pad * 2), b.h / (y2 - y1 + pad * 2)));
+  const k = unit * zoom;
+  cx = b.cx - ((x1 + x2) / 2) * k;
+  cy = b.cy - ((y1 + y2) / 2) * k;
 }
 
 // =================================================================
@@ -341,7 +384,7 @@ function drawReadout(city, t, now) {
 
   fill(fg(140));
   textSize(11);
-  text(city.name + (city.here ? '   ·   CURRENT LOCATION' : ''), x, y);
+  text((city.here ? '● ' : '') + city.name, x, y);   // ● = your current location
 
   fill(fg(255));
   textFont(FONT);
@@ -369,7 +412,7 @@ function drawCityList(now) {
   for (let row = 0; row < rowsN; row++) {
     for (let col = 0; col < cols; col++) {
       const i = row * cols + col;
-      if (i >= CITIES.length) break;
+      if (i >= L.list.count) break;
       const c = CITIES[i];
       const t = getTime(c, now);
       const x = margin + col * colW;
@@ -588,8 +631,8 @@ function getOffset(city, date) {
   return base + ' ' + sign + h + (m ? ':' + nf(m, 2) : '');
 }
 
-function isInside(b) {
-  return mouseX >= b.x && mouseX <= b.x + b.w && mouseY >= b.y && mouseY <= b.y + b.h;
+function isInside(b, x = mouseX, y = mouseY) {
+  return x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
 }
 
 function setCity(i) {
@@ -607,26 +650,47 @@ function toggleView() {
 // =================================================================
 //  MOUSE + KEYBOARD
 // =================================================================
-function mousePressed() {
-  pressX = mouseX;
-  pressY = mouseY;
+// Where is the pointer? (first finger on a touch screen, otherwise the mouse)
+function pointer() {
+  if (touches.length > 0) return { x: touches[0].x, y: touches[0].y };
+  return { x: mouseX, y: mouseY };
 }
 
-function mouseDragged() {
-  dragging = true;
-  dragYaw += movedX * 0.008;
-  dragPitch += movedY * 0.006;
-}
-
-function mouseReleased() {
-  // a click (not a drag) -> check buttons and cities
-  if (dist(mouseX, mouseY, pressX, pressY) < 5) {
-    for (const b of hitBoxes) {
-      if (isInside(b)) { b.action(); break; }
-    }
-  }
+function pressAt(p) {
+  pressX = lastX = p.x;
+  pressY = lastY = p.y;
   dragging = false;
 }
+
+// Rotate by how far the pointer moved since last time.
+// (We measure this ourselves: on iPhone Safari p5's movedX can be undefined,
+//  which used to turn the angles into NaN and make the clock vanish.)
+function dragTo(p) {
+  const dx = p.x - lastX, dy = p.y - lastY;
+  lastX = p.x;
+  lastY = p.y;
+  if (!isFinite(dx) || !isFinite(dy)) return;
+  if (dist(p.x, p.y, pressX, pressY) > 6) dragging = true;
+  dragYaw += dx * 0.008;
+  dragPitch += dy * 0.006;
+}
+
+// a click / tap that didn't move = press a button or a city
+function releaseAt(p) {
+  let hitSomething = false;
+  if (!dragging) {
+    for (const b of hitBoxes) {
+      if (isInside(b, p.x, p.y)) { b.action(); hitSomething = true; break; }
+    }
+  }
+  const wasTap = !dragging;
+  dragging = false;
+  return { wasTap, hitSomething };
+}
+
+function mousePressed() { pressAt(pointer()); }
+function mouseDragged() { dragTo(pointer()); }
+function mouseReleased() { releaseAt(pointer()); }
 
 function doubleClicked() {
   if (!hitBoxes.some((b) => isInside(b))) toggleView();
@@ -644,8 +708,9 @@ function touchStarted() {
   if (touches.length === 2) {
     pinchStart = dist(touches[0].x, touches[0].y, touches[1].x, touches[1].y);
     zoomStart = zoom;
-  } else {
-    mousePressed();
+    dragging = true;                 // a pinch is never a tap
+  } else if (touches.length === 1) {
+    pressAt(pointer());
   }
   return false; // don't scroll the page
 }
@@ -653,21 +718,21 @@ function touchStarted() {
 function touchMoved() {
   if (touches.length === 2 && pinchStart > 0) {
     const d = dist(touches[0].x, touches[0].y, touches[1].x, touches[1].y);
-    zoom = constrain(zoomStart * (d / pinchStart), 0.55, 1.8);
-  } else if (touches.length === 1) {
-    mouseDragged();
+    if (d > 0) zoom = constrain(zoomStart * (d / pinchStart), 0.55, 1.8);
+  } else if (touches.length === 1 && pinchStart === 0) {
+    dragTo(pointer());
   }
   return false;
 }
 
 function touchEnded() {
-  const wasTap = !dragging && pinchStart === 0 && dist(mouseX, mouseY, pressX, pressY) < 10;
-  if (touches.length === 0) pinchStart = 0;
-  mouseReleased();
-  if (wasTap && !hitBoxes.some((b) => isInside(b))) {
+  if (touches.length > 0) return false;      // other fingers still down
+  const r = releaseAt({ x: lastX, y: lastY });
+  if (pinchStart === 0 && r.wasTap && !r.hitSomething) {
     if (millis() - lastTap < 300) toggleView();   // double-tap
     lastTap = millis();
   }
+  pinchStart = 0;
   return false;
 }
 
