@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v9)
+  DRUM — a minimal 3D world clock (v10)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -96,7 +96,9 @@ class Ring {
 
     // INNER LOOP: walk around the ring, one division at a time
     for (let i = 0; i < this.count; i++) {
-      const a = i * step - this.angle;   // angle of this division (0 = front)
+      // angle of this division (0 = front). The minus sign lays the numbers
+      // out CLOCKWISE (seen from above, like a real clock face).
+      const a = this.angle - i * step;
       const isCurrent = i === current;
 
       // --- tick mark (a short line pointing to the center) ---
