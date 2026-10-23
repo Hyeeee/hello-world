@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v23)
+  DRUM — a minimal 3D world clock (v24)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -24,9 +24,9 @@ const CITIES = [
   { name: 'PARIS',       tz: 'Europe/Paris' },
   { name: 'NEW YORK',    tz: 'America/New_York' },
   { name: 'LOS ANGELES', tz: 'America/Los_Angeles' },
+  { name: 'SÃO PAULO',   tz: 'America/Sao_Paulo' },
   { name: 'SYDNEY',      tz: 'Australia/Sydney' },
-  { name: 'MUMBAI',      tz: 'Asia/Kolkata' },
-  { name: 'DUBAI',       tz: 'Asia/Dubai' },
+  { name: 'SINGAPORE',   tz: 'Asia/Singapore' },
 ];
 
 // ---------- CAMERA ----------
