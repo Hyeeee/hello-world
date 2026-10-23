@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v7)
+  DRUM — a minimal 3D world clock (v8)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -464,14 +464,22 @@ function wallClockMinutes(fmt, date) {
   return ms / 60000;
 }
 
-// e.g. Seoul -> "NYC +13H", London -> "NYC +4H", LA -> "NYC −3H", Mumbai -> "NYC +9:30H"
+// New York's time-zone name right now: "EDT" in summer, "EST" in winter
+const NY_ABBR_FMT = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' });
+function eastern(date) {
+  const part = NY_ABBR_FMT.formatToParts(date).find((p) => p.type === 'timeZoneName');
+  return part ? part.value : 'ET';
+}
+
+// e.g. Seoul -> "EDT +13", LA -> "EDT −3", Mumbai -> "EDT +9:30", New York -> "EDT"
 function getOffset(city, date) {
   const diff = wallClockMinutes(city.fullFmt, date) - wallClockMinutes(NY_FMT, date);
-  if (diff === 0) return 'NYC ±0H';
+  const base = eastern(date);
+  if (diff === 0) return base;
   const sign = diff > 0 ? '+' : '−';
   const h = floor(abs(diff) / 60);
   const m = abs(diff) % 60;
-  return 'NYC ' + sign + h + (m ? ':' + nf(m, 2) : '') + 'H';
+  return base + ' ' + sign + h + (m ? ':' + nf(m, 2) : '');
 }
 
 function isInside(b) {
