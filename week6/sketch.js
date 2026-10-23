@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v26)
+  DRUM — a minimal 3D world clock (v27)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -283,7 +283,9 @@ function computeLayout() {
   } else {
     // the clock sits HIGH: a small gap under the header, a bigger one above the
     // cities (the big rings at the bottom make it look lower than it is)
-    box = { x1: m, x2: width - m, y1: head.bottom + 8, y2: list.top - 110 };   // big gap above the cities
+    box = compact
+      ? { x1: m, x2: width - m, y1: head.bottom + 24, y2: list.top - 24 }     // phone: same gap above and below
+      : { x1: m, x2: width - m, y1: head.bottom + 8, y2: list.top - 110 };   // desktop: big gap above the cities
   }
   const bw = box.x2 - box.x1, bh = box.y2 - box.y1;
   const clock = {
@@ -325,11 +327,12 @@ function fitClock() {
   unit = max(0.2, min(b.w / (x2 - x1 + pad * 2), b.h / (y2 - y1 + pad * 2)));
   const k = unit * zoom;
   cx = b.cx - ((x1 + x2) / 2) * k;
-  // Vertical: the clock's top is pinned right under the header. Any spare
-  // height (tall, narrow window) goes BELOW the clock, never above it.
+  // Vertical (desktop): the clock's top is pinned right under the header and
+  // any spare height goes BELOW it. On phones the clock is centered instead.
   const clockH = (y2 - y1) * k;
   const spare = max(0, b.h - clockH);
-  const top = b.cy - b.h / 2;          // always pinned right under the header; spare space goes below
+  // phones: spare space split evenly = clock exactly in the middle
+  const top = b.cy - b.h / 2 + (L.compact || L.short ? spare / 2 : 0);
   cy = top - y1 * k;
 }
 
