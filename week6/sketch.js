@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v16)
+  DRUM — a minimal 3D world clock (v17)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -18,7 +18,7 @@
 // ---------- CITIES ----------
 const CITIES = [
   { name: 'SEOUL',       tz: 'Asia/Seoul' },
-  { name: 'TOKYO',       tz: 'Asia/Tokyo' },
+  { name: 'MUMBAI',      tz: 'Asia/Kolkata' },     // (Tokyo had the same time as Seoul)
   { name: 'DUBAI',       tz: 'Asia/Dubai' },
   { name: 'PARIS',       tz: 'Europe/Paris' },
   { name: 'LONDON',      tz: 'Europe/London' },
@@ -237,20 +237,14 @@ function computeLayout() {
 
   // --- buttons ---
   // Two toggle icons. 'size' is the tap area, 'icon' is how big the drawing is.
-  // phones: two toggle icons.  desktop: segmented text buttons.
-  const ctrl = compact || short
-    ? { mode: 'icons', size: 40, icon: 17, gap: 4 }               // size = tap area
-    : { mode: 'text', segW: 54, h: 24, gap: 10, size: 10 };
+  // text buttons:  DRUM  DIAL      DARK  LIGHT   (no boxes)
+  // size = text size, h = tap height, optGap = space between the two words,
+  // groupGap = space between the two pairs
+  const ctrl = { size: 11, h: 30, optGap: 14, groupGap: compact || short ? 22 : 30 };
   // lineY = the center of the top line. The city name and the buttons are
   // both centered on it, so they sit exactly on the same line.
   ctrl.lineY = (compact || short ? 20 : 36) + 8;
-  if (ctrl.mode === 'icons') {
-    ctrl.h = ctrl.size;
-    // push the tap areas right so the icon drawing lines up with the margin
-    ctrl.x = width - m - ctrl.size * 2 - ctrl.gap + (ctrl.size - ctrl.icon) / 2;
-  } else {
-    ctrl.x = width - m - (ctrl.segW * 4 + ctrl.gap);
-  }
+  ctrl.right = width - m;          // the buttons are lined up from the right edge
   ctrl.y = ctrl.lineY - ctrl.h / 2;
 
   // --- header (city, big time, date) ---
@@ -277,7 +271,8 @@ function computeLayout() {
     // landscape phone: to the right of the header, under the buttons
     box = { x1: head.right + 10, x2: width - m, y1: ctrl.y + ctrl.h + 8, y2: list.top - 12 };
   } else {
-    box = { x1: m, x2: width - m, y1: head.bottom + 16, y2: list.top - 16 };
+    // less space above the clock than below it, so it doesn't look like it sinks
+    box = { x1: m, x2: width - m, y1: head.bottom + 4, y2: list.top - 28 };
   }
   const bw = box.x2 - box.x1, bh = box.y2 - box.y1;
   const clock = {
@@ -446,133 +441,59 @@ function drawCityList(now) {
   }
 }
 
-// Top-right controls.
-// Desktop: text buttons (see drawTextButtons). Phones: two toggle icons —
-// each shows the CURRENT mode; tap it to switch to the other one.
-//   view:  drum (cylinder)  <->  dial (rings)
-//   theme: dark (moon)      <->  light (sun)
+// Top-right controls: segmented text buttons on every screen size.
 function drawControls() {
-  if (L.ctrl.mode === 'text') {
-    drawTextButtons();
-    cursor(hitBoxes.some((b) => isInside(b)) ? HAND : dragging ? MOVE : ARROW);
-    return;
-  }
-  const buttons = [
-    { icon: viewDial ? 'dial' : 'drum', action: toggleView },
-    { icon: lightMode ? 'sun' : 'moon', action: toggleLight },
-  ];
-  const { size, icon, gap, lineY } = L.ctrl;
-  const bg = mixTheme('bg');
-  const bgCol = color(bg[0], bg[1], bg[2]);
-
-  for (let k = 0; k < buttons.length; k++) {
-    const b = buttons[k];
-    const bx = L.ctrl.x + k * (size + gap);
-    const box = { x: bx, y: lineY - size / 2, w: size, h: size, action: b.action };
-    const hover = canHover && isInside(box);
-    // just the icon, no box — brighter on hover
-    drawIcon(b.icon, bx + size / 2, lineY, icon, fg(hover ? 255 : 170), bgCol);
-    hitBoxes.push(box);
-  }
-
-  // hand cursor when over something clickable
+  drawTextButtons();
   cursor(hitBoxes.some((b) => isInside(b)) ? HAND : dragging ? MOVE : ARROW);
 }
 
+// Minimal text buttons. The chosen word is bright with a thin underline,
+// the other one is dim. Click / tap a word to choose it.
 function drawTextButtons() {
   const groups = [
     { options: ['DRUM', 'DIAL'],  selected: viewDial ? 1 : 0,  set: (k) => setView(k === 1) },
     { options: ['DARK', 'LIGHT'], selected: lightMode ? 1 : 0, set: (k) => setLight(k === 1) },
   ];
-  const { segW, h, gap } = L.ctrl;
-  let x = L.ctrl.x;
-  const y = L.ctrl.lineY - h / 2;   // centered on the same line as the city name
-
+  const c = L.ctrl;
   textFont(FONT);
-  textSize(L.ctrl.size);
-  textAlign(CENTER, CENTER);
+  textSize(c.size);
+  textAlign(LEFT, CENTER);
 
-  // loop over the button groups, then over the options inside each group
-  for (const g of groups) {
-    for (let k = 0; k < g.options.length; k++) {
-      const bx = x + k * segW;
-      const box = { x: bx, y, w: segW, h, action: () => g.set(k) };
-      const active = k === g.selected;
-      const hover = !active && isInside(box);
+  // measure everything first, so the whole row can be right-aligned
+  let total = 0;
+  for (let g = 0; g < groups.length; g++) {
+    for (let k = 0; k < groups[g].options.length; k++) {
+      total += textWidth(groups[g].options[k]) + (k > 0 ? c.optGap : 0);
+    }
+    if (g > 0) total += c.groupGap;
+  }
 
-      // fill: solid ink when selected, a faint tint on hover
+  let x = c.right - total;
+  // loop over the pairs, then over the two words in each pair
+  for (let g = 0; g < groups.length; g++) {
+    const grp = groups[g];
+    if (g > 0) x += c.groupGap;
+    for (let k = 0; k < grp.options.length; k++) {
+      if (k > 0) x += c.optGap;
+      const label = grp.options[k];
+      const w = textWidth(label);
+      // tap area: a bit wider and taller than the word itself
+      const box = { x: x - c.optGap / 2, y: c.lineY - c.h / 2, w: w + c.optGap, h: c.h, action: () => grp.set(k) };
+      const active = k === grp.selected;
+      const hover = !active && canHover && isInside(box);
+
       noStroke();
-      if (active) fill(fg(255));
-      else if (hover) fill(fg(25));
-      else noFill();
-      rect(bx, y, segW, h);
-
-      // label: background color on the filled half, ink otherwise
-      const bg = mixTheme('bg');
-      fill(active ? color(bg[0], bg[1], bg[2]) : fg(hover ? 255 : 150));
-      text(g.options[k], bx + segW / 2, y + h / 2 + 0.5);
-
+      fill(fg(active ? 255 : hover ? 200 : 100));
+      text(label, x, c.lineY);
+      if (active) {                          // thin underline under the chosen word
+        stroke(fg(255));
+        strokeWeight(1);
+        line(x, c.lineY + c.size * 0.75, x + w, c.lineY + c.size * 0.75);
+      }
       hitBoxes.push(box);
-    }
-    // thin outline around the whole group + divider in the middle
-    noFill();
-    stroke(fg(110));
-    strokeWeight(1);
-    rect(x + 0.5, y + 0.5, segW * 2 - 1, h - 1);
-    line(x + segW, y, x + segW, y + h);
-    x += segW * 2 + gap;
-  }
-}
-
-// Small line icons drawn with p5 shapes (no image files needed).
-// cx, cy = center, s = size, col = line color, behind = color under the icon
-function drawIcon(name, cx, cy, s, col, behind) {
-  push();
-  translate(cx, cy);
-  stroke(col);
-  strokeWeight(1.2);
-  noFill();
-  const r = s / 2;
-
-  if (name === 'drum') {
-    // a cylinder: top ellipse, two sides, bottom curve
-    const w = s * 0.9, eh = s * 0.32, top = -r * 0.75, bottom = r * 0.75;
-    ellipse(0, top, w, eh);
-    line(-w / 2, top, -w / 2, bottom);
-    line(w / 2, top, w / 2, bottom);
-    arc(0, bottom, w, eh, 0, PI);
-  } else if (name === 'dial') {
-    // a flat dial: outer ring, inner ring, one tick at the front
-    circle(0, 0, s);
-    circle(0, 0, s * 0.5);
-    line(0, r * 0.5, 0, r);
-  } else if (name === 'moon') {
-    // a crescent outline: the part of a big circle that is NOT inside a
-    // smaller, shifted circle, then back along the edge of the small circle
-    const R = s * 0.45, r2 = s * 0.38;
-    const ox = s * 0.24, oy = -s * 0.18;          // where the "bite" circle sits
-    const off = atan2(oy, ox);
-    beginShape();
-    for (let i = 0; i <= 72; i++) {               // outer edge, counter-clockwise
-      const a = off + (i / 72) * TWO_PI;
-      const x = R * cos(a), y = R * sin(a);
-      if (dist(x, y, ox, oy) >= r2) vertex(x, y);
-    }
-    for (let i = 72; i >= 0; i--) {               // inner edge, back the other way
-      const a = off + PI + (i / 72 - 0.5) * TWO_PI;
-      const x = ox + r2 * cos(a), y = oy + r2 * sin(a);
-      if (dist(x, y, 0, 0) <= R) vertex(x, y);
-    }
-    endShape(CLOSE);
-  } else if (name === 'sun') {
-    // a small circle with 8 rays (a loop around the circle)
-    circle(0, 0, s * 0.42);
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * TWO_PI;
-      line(cos(a) * r * 0.62, sin(a) * r * 0.62, cos(a) * r, sin(a) * r);
+      x += w;
     }
   }
-  pop();
 }
 
 // =================================================================
