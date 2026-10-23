@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v24)
+  DRUM — a minimal 3D world clock (v25)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -24,7 +24,7 @@ const CITIES = [
   { name: 'PARIS',       tz: 'Europe/Paris' },
   { name: 'NEW YORK',    tz: 'America/New_York' },
   { name: 'LOS ANGELES', tz: 'America/Los_Angeles' },
-  { name: 'SÃO PAULO',   tz: 'America/Sao_Paulo' },
+  { name: 'MEXICO CITY', tz: 'America/Mexico_City' },
   { name: 'SYDNEY',      tz: 'Australia/Sydney' },
   { name: 'SINGAPORE',   tz: 'Asia/Singapore' },
 ];
@@ -325,7 +325,12 @@ function fitClock() {
   unit = max(0.2, min(b.w / (x2 - x1 + pad * 2), b.h / (y2 - y1 + pad * 2)));
   const k = unit * zoom;
   cx = b.cx - ((x1 + x2) / 2) * k;
-  cy = b.cy - ((y1 + y2) / 2) * k;
+  // Vertical: if there is spare height (tall, narrow window), DON'T split it
+  // evenly — give only 25% of it to the top, so the clock sits up high.
+  const clockH = (y2 - y1) * k;
+  const spare = max(0, b.h - clockH);
+  const top = b.cy - b.h / 2 + spare * 0.25;
+  cy = top - y1 * k;
 }
 
 // =================================================================
