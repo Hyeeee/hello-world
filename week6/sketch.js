@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v27)
+  DRUM — a minimal 3D world clock (v28)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -123,7 +123,7 @@ class Ring {
         const len = this.tick * min((long ? 1.8 : 1) * (isCurrent ? 1.6 : 1), 1.8);
         const p1 = this.point(a, this.r);
         const p2 = this.point(a, this.r - len);
-        stroke(fg(isCurrent ? 255 : depthAlpha(p1.z, this.r, 70, 230)));   // back ticks less faded = crisper
+        stroke(fg(isCurrent ? 255 : depthAlpha(p1.z, this.r, 55, 180)));   // other ticks a bit softer so the current one (white) stands out
         strokeWeight(isCurrent ? 2.2 : 1.25);
         line(p1.x, p1.y, p2.x, p2.y);
       }
@@ -372,7 +372,7 @@ function drawFlatText(str, a, r, y, size, highlight) {
   push();
   applyMatrix(pu.x - p.x, pu.y - p.y, pv.x - p.x, pv.y - p.y, p.x, p.y);
   noStroke();
-  fill(fg(highlight ? 255 : depthAlpha(p.z, r, 70, 225)));
+  fill(fg(highlight ? 255 : depthAlpha(p.z, r, 55, 175)));   // other numbers softer, the current one pure white
   textFont(FONT);
   textSize(size);
   textAlign(CENTER, CENTER);
