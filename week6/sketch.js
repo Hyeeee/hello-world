@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v13)
+  DRUM — a minimal 3D world clock (v14)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -232,8 +232,8 @@ function computeLayout() {
 
   // --- buttons ---
   const ctrl = compact || short
-    ? { segW: 46, h: 26, gap: 8, size: 9 }
-    : { segW: 54, h: 24, gap: 10, size: 10 };
+    ? { segW: 38, h: 34, gap: 8, icon: 16 }    // bigger on phones = easier to tap
+    : { segW: 34, h: 30, gap: 10, icon: 14 };
   ctrl.y = compact || short ? 20 : 36;
   ctrl.x = width - m - (ctrl.segW * 4 + ctrl.gap);
 
@@ -252,7 +252,7 @@ function computeLayout() {
   else if ((width - m * 2) / n >= 84) cols = n;   // everything fits in one row
   else cols = ceil(n / 2);
   const rows = ceil(n / cols);
-  const list = { cols, rows, m, rowH: 52, gutter: compact ? 12 : 16 };
+  const list = { cols, rows, m, rowH: rows > 1 ? 72 : 52, gutter: compact ? 12 : 16 };  // more air between rows
   list.colW = (width - m * 2) / cols;
   list.top = height - m - rows * list.rowH + 12;
 
@@ -394,20 +394,17 @@ function drawCityList(now) {
   }
 }
 
-// Two small segmented buttons (top right): [DRUM | DIAL]  [DARK | LIGHT]
+// Two small segmented icon buttons (top right):
+//   [ drum | dial ]   [ moon | sun ]
 // The selected half is filled, so it's clear what is on and that it can be clicked.
 function drawControls() {
   const groups = [
-    { options: ['DRUM', 'DIAL'],  selected: viewDial ? 1 : 0,  set: (k) => setView(k === 1) },
-    { options: ['DARK', 'LIGHT'], selected: lightMode ? 1 : 0, set: (k) => setLight(k === 1) },
+    { options: ['drum', 'dial'], selected: viewDial ? 1 : 0,  set: (k) => setView(k === 1) },
+    { options: ['moon', 'sun'],  selected: lightMode ? 1 : 0, set: (k) => setLight(k === 1) },
   ];
   const { segW, h, gap } = L.ctrl;
   let x = L.ctrl.x;
   const y = L.ctrl.y;
-
-  textFont(FONT);
-  textSize(L.ctrl.size);
-  textAlign(CENTER, CENTER);
 
   // loop over the button groups, then over the options inside each group
   for (const g of groups) {
@@ -424,10 +421,12 @@ function drawControls() {
       else noFill();
       rect(bx, y, segW, h);
 
-      // label: background color on the filled half, ink otherwise
+      // icon: background color on the filled half, ink otherwise
       const bg = mixTheme('bg');
-      fill(active ? color(bg[0], bg[1], bg[2]) : fg(hover ? 255 : 150));
-      text(g.options[k], bx + segW / 2, y + h / 2 + 0.5);
+      const bgCol = color(bg[0], bg[1], bg[2]);
+      const iconCol = active ? bgCol : fg(hover ? 255 : 170);
+      const behind = active ? fg(255) : bgCol;   // color under the icon (for the moon cut-out)
+      drawIcon(g.options[k], bx + segW / 2, y + h / 2, L.ctrl.icon, iconCol, behind);
 
       hitBoxes.push(box);
     }
@@ -442,6 +441,46 @@ function drawControls() {
 
   // hand cursor when over something clickable
   cursor(hitBoxes.some((b) => isInside(b)) ? HAND : dragging ? MOVE : ARROW);
+}
+
+// Small line icons drawn with p5 shapes (no image files needed).
+// cx, cy = center, s = size, col = line color, behind = color under the icon
+function drawIcon(name, cx, cy, s, col, behind) {
+  push();
+  translate(cx, cy);
+  stroke(col);
+  strokeWeight(1.2);
+  noFill();
+  const r = s / 2;
+
+  if (name === 'drum') {
+    // a cylinder: top ellipse, two sides, bottom curve
+    const w = s * 0.9, eh = s * 0.32, top = -r * 0.75, bottom = r * 0.75;
+    ellipse(0, top, w, eh);
+    line(-w / 2, top, -w / 2, bottom);
+    line(w / 2, top, w / 2, bottom);
+    arc(0, bottom, w, eh, 0, PI);
+  } else if (name === 'dial') {
+    // a flat dial: outer ring, inner ring, one tick at the front
+    circle(0, 0, s);
+    circle(0, 0, s * 0.5);
+    line(0, r * 0.5, 0, r);
+  } else if (name === 'moon') {
+    // a crescent: full circle, then a circle in the background color cuts it
+    noStroke();
+    fill(col);
+    circle(0, 0, s * 0.9);
+    fill(behind);
+    circle(s * 0.28, -s * 0.2, s * 0.78);
+  } else if (name === 'sun') {
+    // a small circle with 8 rays (a loop around the circle)
+    circle(0, 0, s * 0.42);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TWO_PI;
+      line(cos(a) * r * 0.62, sin(a) * r * 0.62, cos(a) * r, sin(a) * r);
+    }
+  }
+  pop();
 }
 
 // =================================================================
