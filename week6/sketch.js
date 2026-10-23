@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v19)
+  DRUM — a minimal 3D world clock (v20)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -16,15 +16,17 @@
 */
 
 // ---------- CITIES ----------
+// Order: Seoul -> Europe -> the Americas -> Australia -> others.
+// (Your own city is added in front of all of these when the clock starts.)
 const CITIES = [
   { name: 'SEOUL',       tz: 'Asia/Seoul' },
-  { name: 'MUMBAI',      tz: 'Asia/Kolkata' },     // (Tokyo had the same time as Seoul)
-  { name: 'DUBAI',       tz: 'Asia/Dubai' },
-  { name: 'PARIS',       tz: 'Europe/Paris' },
   { name: 'LONDON',      tz: 'Europe/London' },
+  { name: 'PARIS',       tz: 'Europe/Paris' },
   { name: 'NEW YORK',    tz: 'America/New_York' },
   { name: 'LOS ANGELES', tz: 'America/Los_Angeles' },
   { name: 'SYDNEY',      tz: 'Australia/Sydney' },
+  { name: 'MUMBAI',      tz: 'Asia/Kolkata' },
+  { name: 'DUBAI',       tz: 'Asia/Dubai' },
 ];
 
 // ---------- CAMERA ----------
@@ -258,7 +260,7 @@ function computeLayout() {
   // --- header (city, big time, date) ---
   const head = { x: m, y: ctrl.lineY - 6, timeSize: compact || short ? 34 : 40 };   // 11px text, centered on lineY
   head.timeY = head.y + (compact || short ? 14 : 16);   // big time sits close under the city name
-  head.subY = head.timeY + head.timeSize + 3;
+  head.subY = head.timeY + head.timeSize + 10;   // a little air between the big time and the date
   head.bottom = head.subY + 14;
   head.right = m + 230;                           // roughly how wide the header is
 
