@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v20)
+  DRUM — a minimal 3D world clock (v21)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -204,7 +204,6 @@ function draw() {
   morph = lerp(morph, viewDial ? 1 : 0, 0.07);
   fitClock();
 
-  drawDotGrid();
 
   // --- time for the selected city ---
   const city = CITIES[cityIndex];
@@ -375,18 +374,6 @@ function drawFlatText(str, a, r, y, size, highlight) {
 // =================================================================
 //  DECORATION + UI
 // =================================================================
-// A very faint dot grid in the background — built with NESTED LOOPS
-function drawDotGrid() {
-  const gap = 36;
-  stroke(fg(lightMode ? 40 : 22));
-  strokeWeight(1.2);
-  for (let gx = gap / 2; gx < width; gx += gap) {
-    for (let gy = gap / 2; gy < height; gy += gap) {
-      point(gx, gy);
-    }
-  }
-}
-
 function drawReadout(city, t, now) {
   const x = L.head.x, y = L.head.y;
   noStroke();
