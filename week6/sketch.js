@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v17)
+  DRUM — a minimal 3D world clock (v18)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -49,7 +49,8 @@ let hitBoxes = [];        // clickable text areas (cities, buttons)
 let L;                    // screen layout, recalculated every frame (see computeLayout)
 let canHover = true;      // false on touch screens (no mouse to hover with)
 let pinchStart = 0, zoomStart = 1, lastTap = 0;
-let lastX = 0, lastY = 0;  // last pointer position (we measure drag distance ourselves)
+let lastX = 0, lastY = 0;
+let listScroll = 0, listVel = 0, listDragging = false;  // sideways scroll of the city row  // last pointer position (we measure drag distance ourselves)
 let pressX = 0, pressY = 0, dragging = false;
 
 // (no spaces in these lists — p5 wraps names with spaces in quotes, which breaks a list)
@@ -255,15 +256,15 @@ function computeLayout() {
   head.right = m + 230;                           // roughly how wide the header is
 
   // --- city list ---
-  const n = visibleCities(compact).length;
-  let cols;
-  if (compact) cols = 3;
-  else if ((width - m * 2) / n >= 84) cols = n;   // everything fits in one row
-  else cols = ceil(n / 2);
-  const rows = ceil(n / cols);
-  const list = { count: n, cols, rows, m, rowH: rows > 1 ? 72 : 52, gutter: compact ? 12 : 16 };  // more air between rows
-  list.colW = (width - m * 2) / cols;
-  list.top = height - m - rows * list.rowH + 12;
+  // always ONE row with every city. If they don't fit (phones), the row
+  // scrolls sideways: drag / swipe it left and right.
+  const n = CITIES.length;
+  const minColW = compact || short ? 108 : 96;
+  const list = { count: n, cols: n, rows: 1, m, rowH: 52, gutter: compact ? 14 : 16 };
+  list.colW = max(minColW, (width - m * 2) / n);
+  list.contentW = n * list.colW;                   // full width of the row
+  list.maxScroll = max(0, list.contentW - (width - m * 2) - list.gutter);
+  list.top = height - m - list.rowH + 12;
 
   // --- clock: the free box that is left ---
   let box;
@@ -283,11 +284,6 @@ function computeLayout() {
   };
 
   return { compact, short, m, ctrl, head, list, clock };
-}
-
-// Phones show 6 cities (your city + the first 5); bigger screens show them all
-function visibleCities(compact) {
-  return compact ? CITIES.slice(0, 6) : CITIES;
 }
 
 // Center the clock on what is actually DRAWN, not on its math center.
@@ -314,7 +310,7 @@ function fitClock() {
   ({ yaw, pitch, zoom } = saved);
 
   const b = L.clock.box;
-  const pad = 30;                         // room for the numbers at the edge
+  const pad = L.compact ? 6 : 30;         // breathing room at the edge (tiny on phones = bigger clock)
   unit = max(0.2, min(b.w / (x2 - x1 + pad * 2), b.h / (y2 - y1 + pad * 2)));
   const k = unit * zoom;
   cx = b.cx - ((x1 + x2) / 2) * k;
@@ -403,42 +399,65 @@ function drawReadout(city, t, now) {
 
 // All cities as a small grid at the bottom — click to switch
 function drawCityList(now) {
-  const { cols, rowH, colW, gutter } = L.list;
-  const rowsN = L.list.rows;
+  const { colW, gutter, count, maxScroll } = L.list;
   const margin = L.list.m;
-  const top = L.list.top;
+  const y = L.list.top;
+
+  // after a swipe the row keeps gliding a little and slows down (momentum)
+  if (!listDragging) {
+    listScroll += listVel;
+    listVel *= 0.92;
+    if (abs(listVel) < 0.05) listVel = 0;
+  }
+  listScroll = constrain(listScroll, 0, maxScroll);
 
   textFont(FONT);
   textAlign(LEFT, TOP);
   noStroke();
 
-  // NESTED LOOPS: rows x columns of the city grid
-  for (let row = 0; row < rowsN; row++) {
-    for (let col = 0; col < cols; col++) {
-      const i = row * cols + col;
-      if (i >= L.list.count) break;
-      const c = CITIES[i];
-      const t = getTime(c, now);
-      const x = margin + col * colW;
-      const y = top + row * rowH;
-      const active = i === cityIndex;
+  // one loop over the cities; each one is shifted left by the scroll amount
+  for (let i = 0; i < count; i++) {
+    const c = CITIES[i];
+    const x = margin + i * colW - listScroll;
+    if (x > width || x + colW < 0) continue;     // off screen: skip
+    const t = getTime(c, now);
+    const active = i === cityIndex;
 
-      // thin line above each city; the active one is solid white
-      stroke(fg(active ? 255 : 50));
-      strokeWeight(1);
-      line(x, y, x + colW - gutter, y);
-      noStroke();
+    // thin line above each city; the active one is solid
+    stroke(fg(active ? 255 : 50));
+    strokeWeight(1);
+    line(x, y, x + colW - gutter, y);
+    noStroke();
 
-      fill(fg(active ? 255 : 110));
-      textSize(10);
-      text((c.here ? '● ' : '') + c.name, x, y + 8);
-      text(nf(t.h, 2) + ':' + nf(t.m, 2) + ':' + nf(t.s, 2), x, y + 22);
-      fill(fg(active ? 160 : 70));
-      text(getOffset(c, now), x, y + 36);
+    fill(fg(active ? 255 : 110));
+    textSize(10);
+    text((c.here ? '● ' : '') + c.name, x, y + 8);
+    text(nf(t.h, 2) + ':' + nf(t.m, 2) + ':' + nf(t.s, 2), x, y + 22);
+    fill(fg(active ? 160 : 70));
+    text(getOffset(c, now), x, y + 36);
 
-      hitBoxes.push({ x, y, w: colW - gutter, h: 48, action: () => setCity(i) });
-    }
+    hitBoxes.push({ x, y, w: colW - gutter, h: 48, action: () => setCity(i) });
   }
+
+  // soft fade at the edges that still have more cities = "you can scroll"
+  if (maxScroll > 0) {
+    const bg = mixTheme('bg');
+    const fadeW = 36;
+    if (listScroll < maxScroll - 1) edgeFade(width - fadeW, width, bg, y - 4, 56);
+    if (listScroll > 1) edgeFade(fadeW, 0, bg, y - 4, 56);
+  }
+}
+
+// a gradient from transparent (at x1) to the background color (at x2)
+function edgeFade(x1, x2, bg, y, h) {
+  const ctx = drawingContext;
+  const g = ctx.createLinearGradient(x1, 0, x2, 0);
+  g.addColorStop(0, `rgba(${bg[0]},${bg[1]},${bg[2]},0)`);
+  g.addColorStop(1, `rgba(${bg[0]},${bg[1]},${bg[2]},1)`);
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.fillRect(min(x1, x2), y, abs(x2 - x1), h);
+  ctx.restore();
 }
 
 // Top-right controls: segmented text buttons on every screen size.
@@ -630,6 +649,9 @@ function pressAt(p) {
   pressX = lastX = p.x;
   pressY = lastY = p.y;
   dragging = false;
+  // pressing on the city row scrolls the row instead of rotating the clock
+  listDragging = L && L.list.maxScroll > 0 && p.y >= L.list.top - 12;
+  if (listDragging) listVel = 0;
 }
 
 // Rotate by how far the pointer moved since last time.
@@ -641,6 +663,11 @@ function dragTo(p) {
   lastY = p.y;
   if (!isFinite(dx) || !isFinite(dy)) return;
   if (dist(p.x, p.y, pressX, pressY) > 6) dragging = true;
+  if (listDragging) {
+    listScroll -= dx;            // move the row with the finger
+    listVel = -dx;               // remember the speed for the glide
+    return;
+  }
   dragYaw += dx * 0.008;
   dragPitch += dy * 0.006;
 }
@@ -655,6 +682,7 @@ function releaseAt(p) {
   }
   const wasTap = !dragging;
   dragging = false;
+  listDragging = false;
   return { wasTap, hitSomething };
 }
 
@@ -667,6 +695,10 @@ function doubleClicked() {
 }
 
 function mouseWheel(e) {
+  if (L && L.list.maxScroll > 0 && mouseY >= L.list.top - 12) {   // over the city row: scroll it
+    listScroll += e.deltaX || e.delta;
+    return false;
+  }
   zoom = constrain(zoom - e.delta * 0.001, 0.55, 1.8);
   return false; // stop the page from scrolling
 }
