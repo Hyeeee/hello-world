@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v4)
+  DRUM — a minimal 3D world clock (v6)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -90,21 +90,6 @@ class Ring {
   }
 
   display(value) {
-    // a plain ring with no divisions = the base circle
-    if (this.count === 0) {
-      const steps = 120;
-      for (let i = 0; i < steps; i++) {
-        const a1 = (i / steps) * TWO_PI;
-        const a2 = ((i + 1) / steps) * TWO_PI;
-        const p1 = this.point(a1, this.r);
-        const p2 = this.point(a2, this.r);
-        stroke(fg(depthAlpha(p1.z, this.r, 70, 230)));
-        strokeWeight(1.2);
-        line(p1.x, p1.y, p2.x, p2.y);
-      }
-      return;
-    }
-
     const step = TWO_PI / this.count;
     // which index is at the front right now?
     const current = ((floor(value) % this.count) + this.count) % this.count;
@@ -157,12 +142,11 @@ function setup() {
   // the stack of rings, top to bottom
   rings = [
     new Ring({ count: 12, unit: 'h', labelEvery: 1, labelFn: (i) => (i === 0 ? '12' : String(i)),
-               textSize: 34, drumY: -215, drumR: 215, dialR: 270 }),
-    new Ring({ count: 12, unit: 'h', tick: 14, drumY: -125, drumR: 195, dialR: 215 }),
+               textSize: 34, drumY: -165, drumR: 215, dialR: 270 }),
+    new Ring({ count: 12, unit: 'h', tick: 14, drumY: -75, drumR: 195, dialR: 215 }),
     new Ring({ count: 60, unit: 'm', tick: 7, labelEvery: 5, labelFn: (i) => nf(i, 2),
-               textSize: 11, drumY: 5, drumR: 210, dialR: 185 }),
-    new Ring({ count: 60, unit: 's', tick: 6, drumY: 105, drumR: 210, dialR: 130 }),
-    new Ring({ count: 0, drumY: 200, drumR: 215, dialR: 92 }),
+               textSize: 11, drumY: 55, drumR: 210, dialR: 185 }),
+    new Ring({ count: 60, unit: 's', tick: 6, drumY: 155, drumR: 210, dialR: 130 }),
   ];
 }
 
@@ -180,10 +164,12 @@ function draw() {
   unit = min(width, height) / 900;
 
   // --- camera: hover tilt + drag + view mode ---
-  const hoverYaw = (mouseX / width - 0.5) * 0.35;
-  const basePitch = lerp(0.62, 0.95, morph);
+  // hover tilt only in DRUM view (in DIAL view it would just spin the dial)
+  const hoverYaw = (mouseX / width - 0.5) * 0.35 * (1 - morph);
+  // DIAL view looks straight down (90°), so the rings are perfect circles
+  const basePitch = lerp(0.62, HALF_PI, morph);
   yaw = lerp(yaw, hoverYaw + dragYaw, 0.08);
-  pitch = lerp(pitch, constrain(basePitch + dragPitch, 0.02, 1.45), 0.08);
+  pitch = lerp(pitch, constrain(basePitch + dragPitch, 0.02, HALF_PI), 0.08);
   if (!dragging) {              // after you let go, the view floats back
     dragYaw *= 0.96;
     dragPitch *= 0.96;
@@ -211,7 +197,6 @@ function draw() {
     rings[r].display(v);
   }
 
-  drawFrontMarker();
   drawReadout(city, t, now);
   drawCityList(now);
   drawControls();
@@ -273,29 +258,6 @@ function drawDotGrid() {
     for (let gy = gap / 2; gy < height; gy += gap) {
       point(gx, gy);
     }
-  }
-}
-
-// A small triangle at the front of each ring = "now".
-// It lies flat on the ring and points toward the center.
-// It is only visible when you look at the clock from the front:
-// as you rotate to the side, it fades out.
-function drawFrontMarker() {
-  // how much the front of the clock faces us: 1 = straight on, 0 = side view
-  const facing = cos(yaw);
-  const alpha = map(facing, 0.88, 0.98, 0, 255, true);
-  if (alpha <= 0) return;
-
-  noStroke();
-  fill(fg(alpha));
-  for (const ring of rings) {
-    const r = ring.r + 16;   // just outside the ring
-    const size = 6;
-    // three corners of the triangle, in the ring's plane (front = +z)
-    const tip   = project(0, ring.y, r - size);       // points inward
-    const left  = project(-size, ring.y, r + size);
-    const right = project(size, ring.y, r + size);
-    triangle(tip.x, tip.y, left.x, left.y, right.x, right.y);
   }
 }
 
