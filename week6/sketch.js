@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v15)
+  DRUM — a minimal 3D world clock (v16)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -236,18 +236,27 @@ function computeLayout() {
   const m = compact || short ? 20 : 32;           // outer margin
 
   // --- buttons ---
+  // Two toggle icons. 'size' is the tap area, 'icon' is how big the drawing is.
+  // phones: two toggle icons.  desktop: segmented text buttons.
   const ctrl = compact || short
-    ? { segW: 38, h: 34, gap: 8, icon: 16 }    // bigger on phones = easier to tap
-    : { segW: 34, h: 30, gap: 10, icon: 14 };
-  ctrl.y = compact || short ? 20 : 36;
-  ctrl.x = width - m - (ctrl.segW * 4 + ctrl.gap);
+    ? { mode: 'icons', size: 40, icon: 17, gap: 4 }               // size = tap area
+    : { mode: 'text', segW: 54, h: 24, gap: 10, size: 10 };
+  // lineY = the center of the top line. The city name and the buttons are
+  // both centered on it, so they sit exactly on the same line.
+  ctrl.lineY = (compact || short ? 20 : 36) + 8;
+  if (ctrl.mode === 'icons') {
+    ctrl.h = ctrl.size;
+    // push the tap areas right so the icon drawing lines up with the margin
+    ctrl.x = width - m - ctrl.size * 2 - ctrl.gap + (ctrl.size - ctrl.icon) / 2;
+  } else {
+    ctrl.x = width - m - (ctrl.segW * 4 + ctrl.gap);
+  }
+  ctrl.y = ctrl.lineY - ctrl.h / 2;
 
   // --- header (city, big time, date) ---
-  // on a portrait phone it moves BELOW the buttons
-  // the first header line (city name) sits on the same line as the icon buttons
-  const head = { x: m, y: ctrl.y + ctrl.h / 2 - 6, timeSize: compact || short ? 34 : 40 };
-  head.timeY = head.y + 22;
-  head.subY = head.timeY + head.timeSize + 8;
+  const head = { x: m, y: ctrl.lineY - 6, timeSize: compact || short ? 34 : 40 };   // 11px text, centered on lineY
+  head.timeY = head.y + (compact || short ? 14 : 16);   // big time sits close under the city name
+  head.subY = head.timeY + head.timeSize + 3;
   head.bottom = head.subY + 14;
   head.right = m + 230;                           // roughly how wide the header is
 
@@ -437,17 +446,51 @@ function drawCityList(now) {
   }
 }
 
-// Two small segmented icon buttons (top right):
-//   [ drum | dial ]   [ moon | sun ]
-// The selected half is filled, so it's clear what is on and that it can be clicked.
+// Top-right controls.
+// Desktop: text buttons (see drawTextButtons). Phones: two toggle icons —
+// each shows the CURRENT mode; tap it to switch to the other one.
+//   view:  drum (cylinder)  <->  dial (rings)
+//   theme: dark (moon)      <->  light (sun)
 function drawControls() {
+  if (L.ctrl.mode === 'text') {
+    drawTextButtons();
+    cursor(hitBoxes.some((b) => isInside(b)) ? HAND : dragging ? MOVE : ARROW);
+    return;
+  }
+  const buttons = [
+    { icon: viewDial ? 'dial' : 'drum', action: toggleView },
+    { icon: lightMode ? 'sun' : 'moon', action: toggleLight },
+  ];
+  const { size, icon, gap, lineY } = L.ctrl;
+  const bg = mixTheme('bg');
+  const bgCol = color(bg[0], bg[1], bg[2]);
+
+  for (let k = 0; k < buttons.length; k++) {
+    const b = buttons[k];
+    const bx = L.ctrl.x + k * (size + gap);
+    const box = { x: bx, y: lineY - size / 2, w: size, h: size, action: b.action };
+    const hover = canHover && isInside(box);
+    // just the icon, no box — brighter on hover
+    drawIcon(b.icon, bx + size / 2, lineY, icon, fg(hover ? 255 : 170), bgCol);
+    hitBoxes.push(box);
+  }
+
+  // hand cursor when over something clickable
+  cursor(hitBoxes.some((b) => isInside(b)) ? HAND : dragging ? MOVE : ARROW);
+}
+
+function drawTextButtons() {
   const groups = [
-    { options: ['drum', 'dial'], selected: viewDial ? 1 : 0,  set: (k) => setView(k === 1) },
-    { options: ['moon', 'sun'],  selected: lightMode ? 1 : 0, set: (k) => setLight(k === 1) },
+    { options: ['DRUM', 'DIAL'],  selected: viewDial ? 1 : 0,  set: (k) => setView(k === 1) },
+    { options: ['DARK', 'LIGHT'], selected: lightMode ? 1 : 0, set: (k) => setLight(k === 1) },
   ];
   const { segW, h, gap } = L.ctrl;
   let x = L.ctrl.x;
-  const y = L.ctrl.y;
+  const y = L.ctrl.lineY - h / 2;   // centered on the same line as the city name
+
+  textFont(FONT);
+  textSize(L.ctrl.size);
+  textAlign(CENTER, CENTER);
 
   // loop over the button groups, then over the options inside each group
   for (const g of groups) {
@@ -464,12 +507,10 @@ function drawControls() {
       else noFill();
       rect(bx, y, segW, h);
 
-      // icon: background color on the filled half, ink otherwise
+      // label: background color on the filled half, ink otherwise
       const bg = mixTheme('bg');
-      const bgCol = color(bg[0], bg[1], bg[2]);
-      const iconCol = active ? bgCol : fg(hover ? 255 : 170);
-      const behind = active ? fg(255) : bgCol;   // color under the icon (for the moon cut-out)
-      drawIcon(g.options[k], bx + segW / 2, y + h / 2, L.ctrl.icon, iconCol, behind);
+      fill(active ? color(bg[0], bg[1], bg[2]) : fg(hover ? 255 : 150));
+      text(g.options[k], bx + segW / 2, y + h / 2 + 0.5);
 
       hitBoxes.push(box);
     }
@@ -481,9 +522,6 @@ function drawControls() {
     line(x + segW, y, x + segW, y + h);
     x += segW * 2 + gap;
   }
-
-  // hand cursor when over something clickable
-  cursor(hitBoxes.some((b) => isInside(b)) ? HAND : dragging ? MOVE : ARROW);
 }
 
 // Small line icons drawn with p5 shapes (no image files needed).
@@ -509,12 +547,23 @@ function drawIcon(name, cx, cy, s, col, behind) {
     circle(0, 0, s * 0.5);
     line(0, r * 0.5, 0, r);
   } else if (name === 'moon') {
-    // a crescent: full circle, then a circle in the background color cuts it
-    noStroke();
-    fill(col);
-    circle(0, 0, s * 0.9);
-    fill(behind);
-    circle(s * 0.28, -s * 0.2, s * 0.78);
+    // a crescent outline: the part of a big circle that is NOT inside a
+    // smaller, shifted circle, then back along the edge of the small circle
+    const R = s * 0.45, r2 = s * 0.38;
+    const ox = s * 0.24, oy = -s * 0.18;          // where the "bite" circle sits
+    const off = atan2(oy, ox);
+    beginShape();
+    for (let i = 0; i <= 72; i++) {               // outer edge, counter-clockwise
+      const a = off + (i / 72) * TWO_PI;
+      const x = R * cos(a), y = R * sin(a);
+      if (dist(x, y, ox, oy) >= r2) vertex(x, y);
+    }
+    for (let i = 72; i >= 0; i--) {               // inner edge, back the other way
+      const a = off + PI + (i / 72 - 0.5) * TWO_PI;
+      const x = ox + r2 * cos(a), y = oy + r2 * sin(a);
+      if (dist(x, y, 0, 0) <= R) vertex(x, y);
+    }
+    endShape(CLOSE);
   } else if (name === 'sun') {
     // a small circle with 8 rays (a loop around the circle)
     circle(0, 0, s * 0.42);
