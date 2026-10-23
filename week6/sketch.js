@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v18)
+  DRUM — a minimal 3D world clock (v19)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -90,6 +90,13 @@ class Ring {
   }
 
   // a point on this ring at angle a and radius r, projected to the screen
+  // how far out this ring actually draws something: ticks reach the full
+  // radius; a ring with only numbers stops at the outer edge of its numbers
+  outerR() {
+    if (this.tick > 0) return this.r;
+    return this.r - this.textSize * 0.9 + this.textSize * 0.55;
+  }
+
   point(a, r) {
     return project(r * sin(a), this.y, r * cos(a));
   }
@@ -272,8 +279,9 @@ function computeLayout() {
     // landscape phone: to the right of the header, under the buttons
     box = { x1: head.right + 10, x2: width - m, y1: ctrl.y + ctrl.h + 8, y2: list.top - 12 };
   } else {
-    // less space above the clock than below it, so it doesn't look like it sinks
-    box = { x1: m, x2: width - m, y1: head.bottom + 4, y2: list.top - 28 };
+    // the same gap above the clock (to the header) and below it (to the cities)
+    const gap = 24;
+    box = { x1: m, x2: width - m, y1: head.bottom + gap, y2: list.top - gap };
   }
   const bw = box.x2 - box.x1, bh = box.y2 - box.y1;
   const clock = {
@@ -302,7 +310,8 @@ function fitClock() {
   for (const ring of rings) {
     for (let i = 0; i < 24; i++) {
       const a = (i / 24) * TWO_PI;
-      const p = project(ring.r * sin(a), ring.y, ring.r * cos(a));
+      const r = ring.outerR();
+      const p = project(r * sin(a), ring.y, r * cos(a));
       x1 = min(x1, p.x); x2 = max(x2, p.x);
       y1 = min(y1, p.y); y2 = max(y2, p.y);
     }
@@ -310,7 +319,7 @@ function fitClock() {
   ({ yaw, pitch, zoom } = saved);
 
   const b = L.clock.box;
-  const pad = L.compact ? 6 : 30;         // breathing room at the edge (tiny on phones = bigger clock)
+  const pad = 6;                          // tiny breathing room (the gaps above/below are set in computeLayout)
   unit = max(0.2, min(b.w / (x2 - x1 + pad * 2), b.h / (y2 - y1 + pad * 2)));
   const k = unit * zoom;
   cx = b.cx - ((x1 + x2) / 2) * k;
