@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v12)
+  DRUM — a minimal 3D world clock (v13)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -46,6 +46,9 @@ let theme = 0;            // 0 = dark, 1 = light (animated so the switch fades)
 const DARK  = { bg: [0, 0, 0],       ink: [255, 255, 255] };
 const LIGHT = { bg: [255, 255, 255], ink: [0, 0, 0] };
 let hitBoxes = [];        // clickable text areas (cities, buttons)
+let L;                    // screen layout, recalculated every frame (see computeLayout)
+let canHover = true;      // false on touch screens (no mouse to hover with)
+let pinchStart = 0, zoomStart = 1, lastTap = 0;
 let pressX = 0, pressY = 0, dragging = false;
 
 // (no spaces in these lists — p5 wraps names with spaces in quotes, which breaks a list)
@@ -127,8 +130,11 @@ class Ring {
 //  SETUP
 // =================================================================
 function setup() {
-  createCanvas(windowWidth, windowHeight);
+  const cnv = createCanvas(windowWidth, windowHeight);
   pixelDensity(2);
+  // phones: stop the browser from scrolling / zooming the page while you touch the clock
+  cnv.style('touch-action', 'none');
+  canHover = window.matchMedia('(hover: hover)').matches;
 
   addCurrentLocation();
 
@@ -165,13 +171,14 @@ function draw() {
   background(mixTheme('bg'));
   hitBoxes = [];
 
-  cx = width / 2;
-  cy = height * 0.46;
-  unit = min(width, height) / 900;
+  L = computeLayout();
+  cx = L.clock.cx;
+  cy = L.clock.cy;
+  unit = L.clock.unit;
 
   // --- camera: hover tilt + drag + view mode ---
   // hover tilt only in DRUM view (in DIAL view it would just spin the dial)
-  const hoverYaw = (mouseX / width - 0.5) * 0.35 * (1 - morph);
+  const hoverYaw = canHover ? (mouseX / width - 0.5) * 0.35 * (1 - morph) : 0;
   // DIAL view looks straight down (90°), so the rings are perfect circles
   const basePitch = lerp(0.62, HALF_PI, morph);
   yaw = lerp(yaw, hoverYaw + dragYaw, 0.08);
@@ -208,6 +215,63 @@ function draw() {
   drawReadout(city, t, now);
   drawCityList(now);
   drawControls();
+}
+
+// =================================================================
+//  RESPONSIVE LAYOUT
+// =================================================================
+// Works out where everything goes for the current screen size, so the
+// header, buttons, clock and city list never overlap.
+//   - desktop: header top-left, buttons top-right, cities in one row
+//   - phone (portrait): buttons on their own row, header below, cities 3 per row
+//   - phone (landscape): header on the left, clock on the right, cities in one row
+function computeLayout() {
+  const compact = width < 700;                    // narrow screen (phone portrait)
+  const short = height < 520 && width > height;   // low screen (phone landscape)
+  const m = compact || short ? 20 : 32;           // outer margin
+
+  // --- buttons ---
+  const ctrl = compact || short
+    ? { segW: 46, h: 26, gap: 8, size: 9 }
+    : { segW: 54, h: 24, gap: 10, size: 10 };
+  ctrl.y = compact || short ? 20 : 36;
+  ctrl.x = width - m - (ctrl.segW * 4 + ctrl.gap);
+
+  // --- header (city, big time, date) ---
+  // on a portrait phone it moves BELOW the buttons
+  const head = { x: m, y: compact ? ctrl.y + ctrl.h + 22 : ctrl.y + 4, timeSize: compact || short ? 34 : 40 };
+  head.timeY = head.y + 18;
+  head.subY = head.timeY + head.timeSize + 8;
+  head.bottom = head.subY + 14;
+  head.right = m + 230;                           // roughly how wide the header is
+
+  // --- city list ---
+  const n = CITIES.length;
+  let cols;
+  if (compact) cols = 3;
+  else if ((width - m * 2) / n >= 84) cols = n;   // everything fits in one row
+  else cols = ceil(n / 2);
+  const rows = ceil(n / cols);
+  const list = { cols, rows, m, rowH: 52, gutter: compact ? 12 : 16 };
+  list.colW = (width - m * 2) / cols;
+  list.top = height - m - rows * list.rowH + 12;
+
+  // --- clock: the free box that is left ---
+  let box;
+  if (short) {
+    // landscape phone: to the right of the header, under the buttons
+    box = { x1: head.right + 10, x2: width - m, y1: ctrl.y + ctrl.h + 8, y2: list.top - 12 };
+  } else {
+    box = { x1: m, x2: width - m, y1: head.bottom + 16, y2: list.top - 16 };
+  }
+  const bw = box.x2 - box.x1, bh = box.y2 - box.y1;
+  const clock = {
+    cx: (box.x1 + box.x2) / 2,
+    cy: (box.y1 + box.y2) / 2,
+    unit: max(0.2, min(bw, bh) * 0.95 / 600),     // the clock is about 600 units across
+  };
+
+  return { compact, short, m, ctrl, head, list, clock };
 }
 
 // =================================================================
@@ -270,7 +334,7 @@ function drawDotGrid() {
 }
 
 function drawReadout(city, t, now) {
-  const x = 32, y = 40;
+  const x = L.head.x, y = L.head.y;
   noStroke();
   textAlign(LEFT, TOP);
   textFont(FONT);
@@ -281,23 +345,21 @@ function drawReadout(city, t, now) {
 
   fill(fg(255));
   textFont(FONT);
-  textSize(40);
-  text(nf(t.h, 2) + ':' + nf(t.m, 2) + ':' + nf(t.s, 2), x - 2, y + 18);
+  textSize(L.head.timeSize);
+  text(nf(t.h, 2) + ':' + nf(t.m, 2) + ':' + nf(t.s, 2), x - 2, L.head.timeY);
 
   fill(fg(140));
   textFont(FONT);
   textSize(11);
-  text(getOffset(city, now) + '   ' + city.dayFmt.format(now).toUpperCase(), x, y + 68);
+  text(getOffset(city, now) + '   ' + city.dayFmt.format(now).toUpperCase(), x, L.head.subY);
 }
 
 // All cities as a small grid at the bottom — click to switch
 function drawCityList(now) {
-  const cols = width < 760 ? 5 : CITIES.length;
-  const rowsN = ceil(CITIES.length / cols);
-  const margin = 32;
-  const colW = (width - margin * 2) / cols;
-  const rowH = 52;
-  const top = height - margin - rowsN * rowH + 8;
+  const { cols, rowH, colW, gutter } = L.list;
+  const rowsN = L.list.rows;
+  const margin = L.list.m;
+  const top = L.list.top;
 
   textFont(FONT);
   textAlign(LEFT, TOP);
@@ -317,7 +379,7 @@ function drawCityList(now) {
       // thin line above each city; the active one is solid white
       stroke(fg(active ? 255 : 50));
       strokeWeight(1);
-      line(x, y, x + colW - 16, y);
+      line(x, y, x + colW - gutter, y);
       noStroke();
 
       fill(fg(active ? 255 : 110));
@@ -327,7 +389,7 @@ function drawCityList(now) {
       fill(fg(active ? 160 : 70));
       text(getOffset(c, now), x, y + 36);
 
-      hitBoxes.push({ x, y, w: colW - 16, h: 48, action: () => setCity(i) });
+      hitBoxes.push({ x, y, w: colW - gutter, h: 48, action: () => setCity(i) });
     }
   }
 }
@@ -339,13 +401,12 @@ function drawControls() {
     { options: ['DRUM', 'DIAL'],  selected: viewDial ? 1 : 0,  set: (k) => setView(k === 1) },
     { options: ['DARK', 'LIGHT'], selected: lightMode ? 1 : 0, set: (k) => setLight(k === 1) },
   ];
-  const segW = 54, h = 24, gap = 10;
-  const totalW = groups.length * segW * 2 + (groups.length - 1) * gap;
-  let x = width - 32 - totalW;
-  const y = 36;
+  const { segW, h, gap } = L.ctrl;
+  let x = L.ctrl.x;
+  const y = L.ctrl.y;
 
   textFont(FONT);
-  textSize(10);
+  textSize(L.ctrl.size);
   textAlign(CENTER, CENTER);
 
   // loop over the button groups, then over the options inside each group
@@ -535,6 +596,40 @@ function doubleClicked() {
 function mouseWheel(e) {
   zoom = constrain(zoom - e.delta * 0.001, 0.55, 1.8);
   return false; // stop the page from scrolling
+}
+
+// ---- touch screens ----
+// one finger = drag to rotate, two fingers = pinch to zoom,
+// tap = buttons / cities, double-tap = switch view
+function touchStarted() {
+  if (touches.length === 2) {
+    pinchStart = dist(touches[0].x, touches[0].y, touches[1].x, touches[1].y);
+    zoomStart = zoom;
+  } else {
+    mousePressed();
+  }
+  return false; // don't scroll the page
+}
+
+function touchMoved() {
+  if (touches.length === 2 && pinchStart > 0) {
+    const d = dist(touches[0].x, touches[0].y, touches[1].x, touches[1].y);
+    zoom = constrain(zoomStart * (d / pinchStart), 0.55, 1.8);
+  } else if (touches.length === 1) {
+    mouseDragged();
+  }
+  return false;
+}
+
+function touchEnded() {
+  const wasTap = !dragging && pinchStart === 0 && dist(mouseX, mouseY, pressX, pressY) < 10;
+  if (touches.length === 0) pinchStart = 0;
+  mouseReleased();
+  if (wasTap && !hitBoxes.some((b) => isInside(b))) {
+    if (millis() - lastTap < 300) toggleView();   // double-tap
+    lastTap = millis();
+  }
+  return false;
 }
 
 function keyPressed() {
