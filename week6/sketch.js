@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v22)
+  DRUM — a minimal 3D world clock (v23)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -281,9 +281,9 @@ function computeLayout() {
     // landscape phone: to the right of the header, under the buttons
     box = { x1: head.right + 10, x2: width - m, y1: ctrl.y + ctrl.h + 8, y2: list.top - 12 };
   } else {
-    // the same gap above the clock (to the header) and below it (to the cities)
-    const gap = 24;
-    box = { x1: m, x2: width - m, y1: head.bottom + gap, y2: list.top - gap };
+    // the clock sits HIGH: a small gap under the header, a bigger one above the
+    // cities (the big rings at the bottom make it look lower than it is)
+    box = { x1: m, x2: width - m, y1: head.bottom + 8, y2: list.top - 56 };
   }
   const bw = box.x2 - box.x1, bh = box.y2 - box.y1;
   const clock = {
