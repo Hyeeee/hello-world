@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v8)
+  DRUM — a minimal 3D world clock (v9)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -184,11 +184,13 @@ function draw() {
   const city = CITIES[cityIndex];
   const now = new Date();
   const t = getTime(city, now);
-  const ms = now.getMilliseconds() / 1000;
+  // Whole numbers only: each ring "clicks" to the exact current value,
+  // so the current hour, minute and second all line up at the front center.
+  // (Ring.update() eases the rotation, so each click still moves smoothly.)
   const values = {
-    h: (t.h % 12) + t.m / 60,      // hours move a little every minute
-    m: t.m + t.s / 60,             // minutes move a little every second
-    s: t.s + ms,                   // seconds move smoothly
+    h: t.h % 12,
+    m: t.m,
+    s: t.s,
   };
 
   // NESTED LOOPS: the outer loop goes through every ring,
