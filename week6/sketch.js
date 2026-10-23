@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v21)
+  DRUM — a minimal 3D world clock (v22)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -123,8 +123,8 @@ class Ring {
         const len = this.tick * min((long ? 1.8 : 1) * (isCurrent ? 1.6 : 1), 1.8);
         const p1 = this.point(a, this.r);
         const p2 = this.point(a, this.r - len);
-        stroke(fg(isCurrent ? 255 : depthAlpha(p1.z, this.r, 30, 200)));
-        strokeWeight(isCurrent ? 2 : 1);
+        stroke(fg(isCurrent ? 255 : depthAlpha(p1.z, this.r, 70, 230)));   // back ticks less faded = crisper
+        strokeWeight(isCurrent ? 2.2 : 1.25);
         line(p1.x, p1.y, p2.x, p2.y);
       }
 
@@ -142,7 +142,8 @@ class Ring {
 // =================================================================
 function setup() {
   const cnv = createCanvas(windowWidth, windowHeight);
-  pixelDensity(2);
+  // draw at the screen's real sharpness (3x on most phones, 2x on Retina laptops)
+  pixelDensity(constrain(displayDensity(), 2, 3));
   // phones: stop the browser from scrolling / zooming the page while you touch the clock
   cnv.style('touch-action', 'none');
   canHover = window.matchMedia('(hover: hover)').matches;
@@ -363,7 +364,7 @@ function drawFlatText(str, a, r, y, size, highlight) {
   push();
   applyMatrix(pu.x - p.x, pu.y - p.y, pv.x - p.x, pv.y - p.y, p.x, p.y);
   noStroke();
-  fill(fg(highlight ? 255 : depthAlpha(p.z, r, 25, 190)));
+  fill(fg(highlight ? 255 : depthAlpha(p.z, r, 70, 225)));
   textFont(FONT);
   textSize(size);
   textAlign(CENTER, CENTER);
