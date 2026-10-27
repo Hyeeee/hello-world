@@ -1,5 +1,5 @@
 /*
-  DRUM — a minimal 3D world clock (v28)
+  DRUM — a minimal 3D world clock (v29)
   --------------------------------------------------------------
   Black & white only. Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
@@ -42,6 +42,9 @@ let cityIndex = 0;
 let morph = 0;            // 0 = DRUM view, 1 = DIAL view (animated)
 let viewDial = false;
 let lightMode = false;
+let lastDaytime = null;   // was the selected city in daytime last frame? (null = not checked yet)
+// daytime = 6:00 to 17:59 in that city -> light mode, otherwise dark mode
+const DAY_START = 6, DAY_END = 18;
 let theme = 0;            // 0 = dark, 1 = light (animated so the switch fades)
 
 // theme colors (RGB)
@@ -210,6 +213,15 @@ function draw() {
   const city = CITIES[cityIndex];
   const now = new Date();
   const t = getTime(city, now);
+
+  // AUTO THEME: morning / daytime in the selected city = light, evening / night = dark.
+  // It only switches when the city changes or its day/night flips, so if you
+  // press DARK / LIGHT yourself, your choice stays until then.
+  const daytime = t.h >= DAY_START && t.h < DAY_END;
+  if (daytime !== lastDaytime) {
+    setLight(daytime);
+    lastDaytime = daytime;
+  }
   // Whole numbers only: each ring "clicks" to the exact current value,
   // so the current hour, minute and second all line up at the front center.
   // (Ring.update() eases the rotation, so each click still moves smoothly.)
@@ -632,7 +644,8 @@ function isInside(b, x = mouseX, y = mouseY) {
 }
 
 function setCity(i) {
-  cityIndex = i;   // the rings spin to the new time on their own (see Ring.update)
+  cityIndex = i;      // the rings spin to the new time on their own (see Ring.update)
+  lastDaytime = null; // re-check day / night for the new city on the next frame
 }
 
 function setView(dial) {
