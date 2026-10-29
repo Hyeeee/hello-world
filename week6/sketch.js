@@ -170,9 +170,9 @@ function setup() {
   rings = [
     new Ring({ count: 12, unit: 'h', labelEvery: 1, labelFn: (i) => (i === 0 ? '12' : String(i)),
                textSize: 34, drumY: -165, drumR: 215, dialR: 270 }),
-    new Ring({ count: 12, unit: 'h', tick: 14, drumY: -75, drumR: 195, dialR: 215 }),
+    new Ring({ count: 12, unit: 'h', tick: 14, drumY: -74, drumR: 195, dialR: 215 }),
     new Ring({ count: 60, unit: 'm', tick: 7, labelEvery: 5, labelFn: (i) => nf(i, 2),
-               textSize: 11, drumY: 55, drumR: 210, dialR: 185 }),
+               textSize: 11, drumY: 26, drumR: 210, dialR: 185 }),
     new Ring({ count: 60, unit: 's', tick: 6, drumY: 155, drumR: 210, dialR: 130 }),
   ];
 }
