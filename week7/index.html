@@ -2,23 +2,79 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-  <title>붕어빵 장인 — One Button Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#e6d3b6" />
+  <title>붕어빵 장인 · Bungeoppang Master</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Nanum+Pen+Script&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 
-  <!-- 라이브러리: p5.js + p5.collide2D -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/p5.collide2d@0.7.3/p5.collide2d.min.js"></script>
+  <!-- Three.js를 CDN에서 모듈로 불러오기 -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
 </head>
 <body>
-  <!-- 순서 중요: 소리 → 언어 → 그림 → 클래스 → 메인 -->
+  <!-- 3D 화면이 그려지는 곳 -->
+  <canvas id="scene"></canvas>
+
+  <!-- 화면 위 UI (HTML) -->
+  <div id="hud" class="hidden">
+    <div class="topbar">
+      <div class="pill score"><span class="lbl" id="scoreLbl"></span><b id="score">0</b><span id="sold" class="muted"></span></div>
+      <ol id="steps" class="steps"></ol>
+      <div class="pill time"><span class="lbl">TIME</span><b id="time">100</b></div>
+    </div>
+    <div id="bubble" class="bubble"><small id="cust"></small><span id="order"></span></div>
+    <div id="gauge" class="gauge"><div id="gaugeLbl" class="glabel"></div><canvas id="gaugeCanvas" width="60" height="300"></canvas></div>
+    <div id="hint" class="hint"><kbd>SPACE</kbd><span id="hintText"></span></div>
+    <div id="card" class="card hidden">
+      <small id="cardWho"></small>
+      <p id="cardComment"></p>
+      <div id="cardStars" class="stars"></div>
+      <small id="cardPts"></small>
+    </div>
+  </div>
+  <div id="popups"></div>
+
+  <!-- 언어 전환 (시작 화면 + 플레이 중 상단) -->
+  <div id="lang" class="lang">
+    <button data-lang="ko">한국어</button><button data-lang="en">EN</button>
+  </div>
+
+  <!-- 시작 화면 -->
+  <div id="title" class="overlay">
+    <div class="panel">
+      <h1 id="tTitle"></h1>
+      <p id="tSub" class="sub"></p>
+      <ul id="tHow" class="how"></ul>
+      <p id="tStart" class="start"></p>
+      <p id="tFoot" class="foot"></p>
+    </div>
+  </div>
+
+  <!-- 종료 화면 -->
+  <div id="over" class="overlay hidden">
+    <div class="panel result">
+      <small id="oTitle" class="red"></small>
+      <h2 id="oRank"></h2>
+      <p id="oSold"></p>
+      <small id="oTotalLbl"></small>
+      <div id="oTotal" class="big">0</div>
+      <small id="oBest" class="accent"></small>
+      <p id="oAgain" class="start"></p>
+    </div>
+  </div>
+
+  <!-- 소리, 언어는 일반 스크립트 / 게임 본체는 모듈 -->
   <script src="sound.js"></script>
   <script src="i18n.js"></script>
-  <script src="art.js"></script>
-  <script src="classes.js"></script>
-  <script src="sketch.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

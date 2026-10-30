@@ -140,5 +140,5 @@ function setLang(l) {
   LANG = l;
   document.documentElement.lang = l;
   try { localStorage.setItem('bungeoppang-lang', l); } catch (e) {}
-  buildBackground(); // 가격표 글씨 다시 그리기
+  if (typeof window.onLangChanged === 'function') window.onLangChanged(); // 화면 글자 다시 쓰기
 }
