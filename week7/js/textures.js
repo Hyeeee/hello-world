@@ -216,6 +216,97 @@ export function kraftTexture() {
   return toTexture(c);
 }
 
+// ---------- 포장마차 밖 밤거리 (흐릿한 불빛) ----------
+export function streetTexture() {
+  const [c, ctx] = makeCanvas(2048, 1024);
+  const g = ctx.createLinearGradient(0, 0, 0, 1024);
+  g.addColorStop(0, '#0b0f1d'); g.addColorStop(0.55, '#1a1624'); g.addColorStop(1, '#2a1f22');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 2048, 1024);
+  // 건물 실루엣
+  for (let i = 0; i < 14; i++) {
+    const x = hash(i * 2.1) * 2048, w = 120 + hash(i * 3.3) * 260, h = 250 + hash(i * 4.7) * 450;
+    ctx.fillStyle = `rgba(8,10,18,${0.6 + hash(i) * 0.3})`;
+    ctx.fillRect(x, 1024 - h - 200, w, h);
+    for (let k = 0; k < 18; k++) {
+      if (hash(i * 31 + k) < 0.5) continue;
+      ctx.fillStyle = `rgba(255,${200 + hash(k) * 40},140,${0.25 + hash(i + k) * 0.4})`;
+      ctx.fillRect(x + 12 + (k % 4) * (w / 4.4), 1024 - h - 180 + Math.floor(k / 4) * 60, 14, 22);
+    }
+  }
+  // 보케(흐릿한 불빛)
+  const cols = [[255, 190, 110], [255, 140, 80], [120, 170, 255], [255, 230, 170], [255, 90, 90], [140, 255, 200]];
+  for (let i = 0; i < 90; i++) {
+    const x = hash(i * 1.7) * 2048, y = 380 + hash(i * 2.9) * 560, r = 14 + hash(i * 5.3) * 54;
+    const col = cols[Math.floor(hash(i * 7.7) * cols.length)], a = 0.18 + hash(i * 9.1) * 0.4;
+    const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+    rg.addColorStop(0, `rgba(${col},${a})`); rg.addColorStop(0.7, `rgba(${col},${a * 0.55})`); rg.addColorStop(1, `rgba(${col},0)`);
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+  }
+  return toTexture(c);
+}
+
+// ---------- 스테인리스 (가로로 긁힌 결) ----------
+export function brushedTexture() {
+  const [c, ctx] = makeCanvas(512, 512);
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 700; i++) {
+    const y = hash(i * 1.9) * 512, x = hash(i * 3.1) * 512, len = 60 + hash(i * 4.4) * 300;
+    const v = hash(i * 7.2) < 0.5 ? 255 : 0;
+    ctx.strokeStyle = `rgba(${v},${v},${v},${0.08 + hash(i) * 0.12})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + len, y); ctx.stroke();
+  }
+  const t = toTexture(c, false);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+// ---------- 빨간 천막 앞의 노란 간판 띠 ----------
+export function signBandTexture(main, sub) {
+  const [c, ctx] = makeCanvas(2048, 256);
+  ctx.fillStyle = '#ffd23a';
+  ctx.fillRect(0, 0, 2048, 256);
+  ctx.fillStyle = '#d8261c';
+  ctx.fillRect(0, 0, 2048, 22);
+  ctx.fillRect(0, 234, 2048, 22);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#d8261c';
+  ctx.font = '150px "Do Hyeon", sans-serif';
+  ctx.fillText(main, 1024, 136);
+  ctx.font = '84px "Do Hyeon", sans-serif';
+  ctx.fillStyle = '#3a2516';
+  ctx.fillText(sub, 360, 136);
+  ctx.fillText(sub, 1690, 136);
+  // 물고기 마크
+  ctx.fillStyle = '#d8261c';
+  for (const x of [640, 1408]) {
+    ctx.save();
+    ctx.translate(x, 128);
+    ctx.scale(0.42, 0.42);
+    fishPath(ctx);
+    ctx.restore();
+    ctx.fill();
+  }
+  return toTexture(c);
+}
+
+// ---------- 천막 아래 물결 모양 테두리 ----------
+export function scallopTexture() {
+  const [c, ctx] = makeCanvas(1024, 128);
+  ctx.fillStyle = '#c4241b';
+  ctx.fillRect(0, 0, 1024, 70);
+  for (let x = 0; x < 1024; x += 64) { ctx.beginPath(); ctx.arc(x + 32, 70, 32, 0, Math.PI); ctx.fill(); }
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillRect(0, 54, 1024, 6);
+  const t = toTexture(c);
+  t.wrapS = THREE.RepeatWrapping;
+  return t;
+}
+
 // ---------- 김(스팀) 한 덩어리 ----------
 export function steamTexture() {
   const [c, ctx] = makeCanvas(128, 128);
