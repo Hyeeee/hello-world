@@ -1,0 +1,14 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #080606;
+  touch-action: none;          /* 모바일에서 화면이 스크롤/확대되지 않게 */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+canvas {
+  display: block;
+}
