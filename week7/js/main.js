@@ -102,7 +102,7 @@ moldPivot.add(batter, cover);
 
 const beanMat = M.makeBeanMaterial(tex.bean);
 const beanGroup = new THREE.Group();
-beanGroup.scale.y = 0.7; // 살짝 납작하게
+beanGroup.scale.y = 0.82; // 살짝만 납작하게 (통통한 팥)
 moldPivot.add(beanGroup);
 
 const kettle = M.makeKettle();
@@ -456,10 +456,10 @@ function syncScene(dt) {
   }
   if (ph === 'bean') {
     if (f.squeezing || S.phaseT < 0.05) M.buildBean(beanGroup, beanMat, f.beanStart, f.beanEnd);
-    beanGroup.position.y = batterY(f.fill) + 8;
+    beanGroup.position.y = batterY(f.fill) + 12;
   }
   if (ph === 'cover') {
-    cover.position.y = beanGroup.position.y + 9;
+    cover.position.y = beanGroup.position.y + 16;
     cover.material.opacity = clamp01(S.phaseT / 0.7);
   }
 
@@ -497,7 +497,7 @@ function syncScene(dt) {
   if (piping.visible) {
     const lift = f.beanDone ? ease(clamp01(S.phaseT / 0.4)) * 200 : 0;
     const squash = f.squeezing ? 1 - 0.08 * (0.5 + 0.5 * Math.sin(S.t * 18)) : 1;
-    piping.position.set(f.beanEnd, batterY(f.fill) + 24 + lift, M.beanZ(f.beanEnd));
+    piping.position.set(f.beanEnd, batterY(f.fill) + 36 + lift, M.beanZ(f.beanEnd));
     piping.rotation.set(0.35, 0, -0.5);
     piping.scale.setScalar(0.72);
     piping.userData.bag.scale.set(squash, 1, squash);

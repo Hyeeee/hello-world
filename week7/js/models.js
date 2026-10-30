@@ -160,13 +160,14 @@ export function makeBatter(texture) {
 // ---------- 팥앙금 줄 (머리 → 꼬리) ----------
 export const beanZ = (x) => Math.sin(x * 0.045) * 4; // 살짝 구불구불
 export function makeBeanMaterial(bumpTex) {
-  bumpTex.repeat.set(6, 1);
+  bumpTex.repeat.set(5, 1.4);
   return new THREE.MeshPhysicalMaterial({
     color: new THREE.Color(`rgb(${BEAN[0]},${BEAN[1]},${BEAN[2]})`),
     roughness: 0.48, clearcoat: 0.35, clearcoatRoughness: 0.4, bumpMap: bumpTex, bumpScale: 3,
   });
 }
 // x0(머리 쪽)부터 x1(꼬리 쪽)까지 튜브 + 양 끝 둥근 마개
+export const BEAN_R = 24; // 팥 줄 굵기(반지름)
 export function buildBean(group, mat, x0, x1) {
   for (const c of [...group.children]) { c.geometry.dispose(); group.remove(c); }
   if (x0 - x1 < 2) return;
@@ -177,10 +178,10 @@ export function buildBean(group, mat, x0, x1) {
     pts.push(new THREE.Vector3(x, 0, beanZ(x)));
   }
   const curve = new THREE.CatmullRomCurve3(pts);
-  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, n * 3, 14, 16, false), mat);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, n * 3, BEAN_R, 20, false), mat);
   group.add(tube);
   for (const x of [x0, x1]) {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(14, 16, 12), mat);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(BEAN_R, 20, 14), mat);
     cap.position.set(x, 0, beanZ(x));
     group.add(cap);
   }
