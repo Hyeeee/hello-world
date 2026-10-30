@@ -19,7 +19,8 @@ const GAME_TIME = 120;
 const BEAN_TARGET = -80;                 // 팥을 여기(꼬리 바로 앞)까지 짜면 100점
 const STEP = (Math.PI * 2) / P.SLOTS;    // 틀 하나 돌리는 각도 (45°)
 const LID_OPEN = -1.9;                   // 뚜껑 열린 각도
-const PRESS_STATES = ['pour', 'bean', 'take'];
+const PRESS_STATES = ['pour', 'bean'];
+const GOLDEN_SECONDS = 16;              // 노릇해질 때까지 걸리는 시간(초)
 
 // =============================================================
 //  1. 3D 기본 설정
@@ -79,9 +80,11 @@ const iron = new THREE.MeshStandardMaterial({ color: 0x2c2a28, metalness: 0.55, 
 
 const stall = P.makeStall();
 scene.add(stall.group);
-const fishGeo = M.makeFishGeometry(fishThickness());
+const thick = fishThickness();
+const fishGeo = M.makeFishGeometry(thick, 160);      // 꺼내서 보이는 붕어빵 (식힘망)
+const lidGeo = M.makeFishGeometry(thick, 56);        // 뚜껑 위 볼록한 모양은 대충이어도 OK (가볍게)
 const fishMat = M.makeFishMaterial(tex.fish);
-const wheel = P.makeWheel(iron, fishGeo);
+const wheel = P.makeWheel(iron, lidGeo);
 scene.add(wheel.group);
 scene.add(P.makeRack());
 
@@ -126,7 +129,7 @@ const S = {
   front: 0, angle: 0,             // 앞에 있는 틀 번호, 원판 각도
   cur: null,                      // 지금 앞 틀에서 만드는 붕어빵
   slots: [], rack: [], queue: [], serve: null, spawnT: 0,
-  held: false, warnT: 0, lastTick: 99, steam: [],
+  held: false, warnT: 0, lastTick: 99, steam: [], flying: [], rotDur: 0.7,
 };
 window.S = S;
 try { S.best = Number(localStorage.getItem('bungeoppang-best-wheel')) || 0; } catch (e) {}
@@ -195,7 +198,8 @@ function updateFront(dt) {
         sl.d = 0;
         sl.flipped = false;
         sl.flipT = -1;
-        sl.rate = (0.68 / 26) * (1 + S.served * 0.02) * (0.92 + Math.random() * 0.16);
+        sl.rate = (0.68 / GOLDEN_SECONDS) * (1 + S.served * 0.02) * (0.92 + Math.random() * 0.16);
+        sl.target = 0.64 + Math.random() * 0.08; // 이만큼 익으면 자동으로 꺼냄
         sl.seed = Math.random() * 100;
         sl.scores = c.scores;
         S.cur = null;
@@ -204,33 +208,27 @@ function updateFront(dt) {
       }
       break;
     case 'rotating':
-      if (S.fsT >= 0.7) {
+      if (S.fsT >= S.rotDur) {
         S.front = (S.front + 1) % P.SLOTS;
         S.angle = -S.front * STEP;
-        S.angleBase = S.angle;
         attachFront();
-        if (S.slots[S.front].cooking) setFs('take');
-        else { S.cur = newFishData(); setFs('opening'); }
+        nextFrontStep();
       }
       break;
-    case 'take': {
-      const d = S.slots[S.front].d;
-      if (d > 0.86) {
-        S.warnT -= dt;
-        if (S.warnT <= 0) { Sound.warn(); S.warnT = 0.28; }
-      }
-      break;
-    }
-    case 'taking':
-      if (S.fsT >= 0.9) {
-        addToRack(S.taken);
-        S.taken = null;
-        S.cur = newFishData();
-        attachFront();
-        startPour();
-      }
+    case 'waiting':
+      // 틀 8개가 전부 굽는 중 → 하나 꺼내질 때까지 기다림
+      nextFrontStep();
       break;
   }
+}
+
+// 앞 틀이 비었으면 반죽 시작, 굽는 중이면 다음 빈 틀로 휙 넘어가기
+function nextFrontStep() {
+  const free = S.slots.some((sl) => !sl.cooking && !sl.popT);
+  const here = S.slots[S.front];
+  if (!here.cooking && here.popT == null) { S.cur = newFishData(); setFs('opening'); }
+  else if (free) startRotate(true);
+  else if (S.fs !== 'waiting') setFs('waiting');
 }
 
 function startPour() {
@@ -239,8 +237,9 @@ function startPour() {
   setFs('pour');
 }
 
-function startRotate() {
+function startRotate(fast = false) {
   S.rotFrom = S.angle;
+  S.rotDur = fast ? 0.35 : 0.7;
   setFs('rotating');
   Sound.whoosh();
 }
@@ -256,10 +255,60 @@ function updateSlots(dt) {
     // 반쯤 익으면 자동으로 뒤집기 (철컥)
     if (!sl.flipped && sl.d >= 0.34) { sl.flipped = true; sl.flipT = 0; Sound.clank(0.18); }
     if (sl.flipT >= 0) { sl.flipT += dt; if (sl.flipT > 0.6) sl.flipT = -1; }
-    if (Math.random() < dt * (1.2 + sl.d * 2.5)) spawnSteam(wheel.slots[sl.i], sl.d > 0.95);
+    if (Math.random() < dt * (1.2 + sl.d * 2.5)) spawnSteam(wheel.slots[sl.i], false);
+    // 노릇해지면 자동으로 꺼내서 식힘망으로 (뒤집는 중이 아닐 때)
+    if (sl.d >= sl.target && sl.flipT < 0) autoTake(sl);
   }
+  // 꺼낸 틀: 뚜껑이 잠깐 열렸다 닫힘
+  for (const sl of S.slots) {
+    if (sl.popT == null) continue;
+    sl.popT += dt;
+    if (sl.popT > 0.9) sl.popT = null;
+  }
+  updateFlying(dt);
   const working = S.cur && (S.cur.pouring || S.cur.squeezing);
-  Sound.setSizzle(Math.min(0.85, cooking * 0.09 + (S.fs === 'take' ? 0.2 : 0) + (working ? 0.1 : 0)));
+  Sound.setSizzle(Math.min(0.85, cooking * 0.09 + (working ? 0.1 : 0)));
+}
+
+// ---------- 자동 꺼내기: 틀 뚜껑 열고 → 붕어빵이 식힘망으로 날아감 ----------
+function autoTake(sl) {
+  sl.cooking = false;
+  sl.popT = 0;
+  const scores = sl.scores || {};
+  scores.cook = 200; // 딱 노릇할 때 꺼냈으니 굽기 점수 만점 → 한 마리 최대 400점
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const mesh = new THREE.Mesh(fishGeo, fishMat.clone());
+  colorFish(mesh.material, sl.d);
+  mesh.castShadow = true;
+  const base = wheel.slots[sl.i].base;
+  base.add(mesh);
+  mesh.position.set(0, 2, 0);
+  scene.attach(mesh);
+  S.flying.push({
+    mesh, d: sl.d, total, t: 0,
+    p: mesh.position.clone(), q: mesh.quaternion.clone(), s: mesh.scale.x,
+    spot: S.rack.length + S.flying.length,
+  });
+  sl.d = 0;
+  Sound.lift();
+}
+
+function updateFlying(dt) {
+  const qTo = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0));
+  for (const f of S.flying) {
+    f.t += dt;
+    const p = ease(clamp01((f.t - 0.25) / 0.6));
+    f.mesh.position.lerpVectors(f.p, P.rackSpot(f.spot), p);
+    f.mesh.position.y += Math.sin(p * Math.PI) * 240 + (f.t < 0.25 ? f.t * 120 : 0);
+    f.mesh.quaternion.slerpQuaternions(f.q, qTo, p);
+    f.mesh.scale.setScalar(lerp(f.s, 0.42, p));
+  }
+  S.flying = S.flying.filter((f) => {
+    if (f.t < 0.85) return true;
+    S.rack.push({ d: f.d, total: f.total, mesh: f.mesh });
+    layoutRack();
+    return false;
+  });
 }
 
 // 익힘 점수: 0.68 근처가 100점
@@ -421,20 +470,6 @@ function finishBean() {
   S.fsT = 0;
 }
 
-function takeOut() {
-  const sl = S.slots[S.front];
-  const scores = sl.scores;
-  award(scores, 'take', cookScore(sl.d), frontWorld(0, 260, 0));
-  if (sl.d > 1.0) popup(T('burnt'), frontWorld(0, 160, 0), '#fff', true);
-  scores.take2 = scores.take; // 꺼내는 타이밍은 2배 점수 → 한 마리 최대 400점
-  const total = Object.values(scores).reduce((a, b) => a + b, 0);
-  S.taken = { d: sl.d, total };
-  sl.cooking = false;
-  sl.d = 0;
-  Sound.lift();
-  setFs('taking');
-}
-
 // ---------- 식힘망 ----------
 function addToRack(f) {
   const mesh = new THREE.Mesh(fishGeo, fishMat.clone());
@@ -458,7 +493,9 @@ function resetWorld() {
   for (const f of S.rack) scene.remove(f.mesh);
   S.queue = []; S.rack = []; S.serve = null;
   serveBag.visible = false;
-  S.slots = wheel.slots.map((s) => ({ i: s.i, cooking: false, d: 0, flipped: false, flipT: -1 }));
+  for (const f of S.flying) scene.remove(f.mesh);
+  S.flying = [];
+  S.slots = wheel.slots.map((s) => ({ i: s.i, cooking: false, d: 0, flipped: false, flipT: -1, popT: null }));
 }
 
 function startGame() {
@@ -509,7 +546,6 @@ function press() {
   switch (S.fs) {
     case 'pour': c.pouring = true; Sound.startPour(); break;
     case 'bean': if (!c.beanDone && !c.squeezing) { c.squeezing = true; Sound.startSqueeze(); } break;
-    case 'take': takeOut(); break;
   }
 }
 function release() {
@@ -563,7 +599,7 @@ function syncScene(dt) {
 
   // 원판 회전 (시작 화면에선 천천히 빙글)
   if (S.phase === 'title') S.angle -= dt * 0.08;
-  if (playing && fs === 'rotating') S.angle = lerp(S.rotFrom, -(S.front + 1) * STEP, ease(clamp01(S.fsT / 0.7)));
+  if (playing && fs === 'rotating') S.angle = lerp(S.rotFrom, -(S.front + 1) * STEP, ease(clamp01(S.fsT / S.rotDur)));
   wheel.rotor.rotation.y = S.angle;
 
   // 뚜껑, 뒤집기, 표시등
@@ -574,7 +610,11 @@ function syncScene(dt) {
       if (fs === 'opening') open = ease(clamp01(S.fsT / 0.35));
       else if (['pour', 'bean', 'cover'].includes(fs)) open = 1;
       else if (fs === 'closing') open = 1 - ease(clamp01(S.fsT / 0.35));
-      else if (fs === 'taking') open = ease(clamp01(S.fsT / 0.3));
+    }
+    if (sl && sl.popT != null) {
+      // 자동 꺼내기: 확 열렸다가 다시 닫힘
+      const t = sl.popT;
+      open = Math.max(open, t < 0.2 ? ease(t / 0.2) : t < 0.55 ? 1 : 1 - ease(clamp01((t - 0.55) / 0.3)));
     }
     ws.lid.rotation.x = LID_OPEN * open;
     if (sl && sl.flipT >= 0) {
@@ -607,26 +647,7 @@ function syncScene(dt) {
     cover.material.opacity = clamp01(S.fsT / 0.7);
   }
 
-  // 꺼내기: 뚜껑 열리면 붕어빵 보이고 → 식힘망으로 날아감
-  frontFish.visible = playing && fs === 'taking' && !!S.taken;
-  if (frontFish.visible) {
-    colorFish(frontFish.material, S.taken.d);
-    if (S.fsT < 0.35) {
-      S.flyFrom = null;
-    } else {
-      if (!S.flyFrom) {
-        scene.attach(frontFish);
-        S.flyFrom = { p: frontFish.position.clone(), q: frontFish.quaternion.clone(), s: frontFish.scale.x };
-      }
-      const p = ease(clamp01((S.fsT - 0.35) / 0.55));
-      const to = P.rackSpot(S.rack.length);
-      frontFish.position.lerpVectors(S.flyFrom.p, to, p);
-      frontFish.position.y += Math.sin(p * Math.PI) * 220;
-      const qTo = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0));
-      frontFish.quaternion.slerpQuaternions(S.flyFrom.q, qTo, p);
-      frontFish.scale.setScalar(lerp(S.flyFrom.s, 0.42, p));
-    }
-  }
+  frontFish.visible = false;
 
   // 놋쇠 주전자 + 반죽 줄기
   kettle.visible = !!(playing && c && (fs === 'pour' || fs === 'cover'));
@@ -822,7 +843,7 @@ function updateHUD() {
   $('rackPill').textContent = T('rack')(S.rack.length);
   $('time').textContent = Math.max(0, Math.ceil(S.timeLeft));
   $('time').parentElement.classList.toggle('low', S.timeLeft <= 10);
-  const showGauge = S.fs === 'pour' || S.fs === 'take';
+  const showGauge = S.fs === 'pour';
   $('gauge').classList.toggle('hidden', !showGauge);
   if (showGauge) {
     const kind = S.fs === 'pour' ? 'pour' : 'cook';

@@ -140,8 +140,8 @@ export function makeFishMaterial(tex) {
   });
 }
 
-export function makeFishGeometry(thickness) {
-  const SIZE = 340, SEG = 220, H = 40;
+export function makeFishGeometry(thickness, SEG = 220) {
+  const SIZE = 340, H = 40;
   const geo = new THREE.PlaneGeometry(SIZE, SIZE, SEG, SEG);
   geo.rotateX(-Math.PI / 2); // 바닥에 눕히기 (x = 오른쪽, z = 앞쪽)
   const pos = geo.attributes.position;
@@ -177,14 +177,8 @@ export function makeBeanMaterial(bumpTex) {
 }
 // x0(머리 쪽)부터 x1(꼬리 쪽)까지 튜브 + 양 끝 둥근 마개
 export const BEAN_R = 24; // 팥 줄 굵기(반지름)
-// 팥 알갱이: 같은 작은 구를 수백 개 "인스턴스"로 한 번에 그려요 (빠름)
-const GRAIN_GEO = new THREE.SphereGeometry(1, 10, 8);
-const GRAIN_MAT = new THREE.MeshPhysicalMaterial({ roughness: 0.32, clearcoat: 0.6, clearcoatRoughness: 0.25 });
-const hash1 = (n) => { const s = Math.sin(n * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
-const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _c = new THREE.Color();
-
 export function buildBean(group, mat, x0, x1) {
-  for (const c of [...group.children]) { if (c.isInstancedMesh) c.dispose(); else c.geometry.dispose(); group.remove(c); }
+  for (const c of [...group.children]) { c.geometry.dispose(); group.remove(c); }
   if (x0 - x1 < 2) return;
   const pts = [];
   const n = Math.max(2, Math.ceil((x0 - x1) / 12));
@@ -193,38 +187,13 @@ export function buildBean(group, mat, x0, x1) {
     pts.push(new THREE.Vector3(x, 0, beanZ(x)));
   }
   const curve = new THREE.CatmullRomCurve3(pts);
-  // 앙금 몸통은 살짝 가늘게 (알갱이가 겉을 덮으니까)
-  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, n * 3, BEAN_R * 0.82, 20, false), mat);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, n * 3, BEAN_R, 20, false), mat);
   group.add(tube);
   for (const x of [x0, x1]) {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(BEAN_R * 0.82, 20, 14), mat);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(BEAN_R, 20, 14), mat);
     cap.position.set(x, 0, beanZ(x));
     group.add(cap);
   }
-  // 겉에 붙은 팥 알갱이들 (길이에 비례해서 개수 결정, 위치는 x로 정해져서 매 프레임 같은 자리)
-  const count = Math.min(420, Math.floor((x0 - x1) * 2.2) + 12);
-  const grains = new THREE.InstancedMesh(GRAIN_GEO, GRAIN_MAT, count);
-  for (let i = 0; i < count; i++) {
-    const h = hash1(i * 3.17 + 1), h2 = hash1(i * 7.31 + 2), h3 = hash1(i * 1.93 + 3);
-    const x = x0 - (x0 - x1) * h;
-    const ang = (h2 - 0.5) * Math.PI * 1.15;          // 위쪽 반원 위주로
-    const r = BEAN_R * (0.78 + h3 * 0.12);
-    const pos = new THREE.Vector3(x, Math.cos(ang) * r, beanZ(x) + Math.sin(ang) * r);
-    const size = 4.2 + h3 * 3.2;                       // 팥알 크기
-    _e.set(h * 6, h2 * 6, h3 * 6);
-    _q.setFromEuler(_e);
-    _m.compose(pos, _q, new THREE.Vector3(size * 1.25, size, size));  // 살짝 길쭉한 콩 모양
-    grains.setMatrixAt(i, _m);
-    // 진한 팥 / 붉은 팥 / 껍질 벗겨진 연한 팥 섞기
-    const k = hash1(i * 5.5 + 4);
-    if (k < 0.55) _c.setRGB(0.30, 0.08, 0.11);
-    else if (k < 0.85) _c.setRGB(0.42, 0.13, 0.17);
-    else _c.setRGB(0.55, 0.28, 0.30);
-    grains.setColorAt(i, _c.convertSRGBToLinear());
-  }
-  grains.instanceMatrix.needsUpdate = true;
-  if (grains.instanceColor) grains.instanceColor.needsUpdate = true;
-  group.add(grains);
   shadowy(group);
 }
 
