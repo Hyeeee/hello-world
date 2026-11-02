@@ -1,85 +1,38 @@
-# 붕어빵 장인 🐟 Bungeoppang Master — 원버튼 포장마차 게임 (3D)
+# Bungeoppang Master 🐟
 
-밤 포장마차에서 **원판 붕어빵 기계**(틀 8개)를 돌리며 줄 선 손님들 주문을 받는 원버튼 게임.
-**SPACE / 클릭 / 터치** 하나로 조작. M = 소리, L = 언어 (오른쪽 위 **한국어 | EN** 버튼으로도 바꿀 수 있어요).
+A one-button 3D game: run a night-time street stall in Seoul, bake *bungeoppang* (fish-shaped bread) on a rotating 8-mold machine, and serve the customers in line.
 
-## 게임 방법 (120초)
+**▶ Play:** https://hyeeee.github.io/hello-world/week7/
+**Also live at:** https://bungeoppang.netlify.app
 
-내가 다루는 건 **앞에 온 틀 하나**뿐이에요.
+## How to play (120 seconds)
 
-| 앞에 온 틀이… | 조작 | 잘하는 법 |
-|---|---|---|
-| 비어 있으면 | **꾹 → 떼기**: 반죽 붓기 | 게이지 진한 초록에서 떼기 |
-| 반죽이 있으면 | **꾹 → 떼기**: 팥 짜기 | 머리 → 꼬리로 쭉, "여기까지!" 깃발에서 떼기 |
-| (자동) | 반죽 덮기 → 뚜껑 닫기 → 원판 한 칸 돌리기 | |
-| 굽는 중이면 | (자동) 다음 빈 틀로 휙 넘어감 | 8개 다 굽는 중이면 하나 나올 때까지 기다림 |
+One button: **SPACE / click / tap**. `M` mutes, `L` switches Korean / English.
 
-- 틀들은 원판 위에서 계속 익고(약 16초), 반쯤 익으면 **자동으로 뒤집혀요**. 가장자리 **표시등** 색 = 익힘.
-- 노릇해지면 **자동으로 뚜껑이 열리고 식힘망으로 쏙** → 안 타요!
-- 맨 앞 손님 주문 개수만큼 식힘망에 모이면 **자동으로 봉투에 담아 전달**.
-- 손님 머리 위 막대 = 인내심. 다 떨어지면 가버려요 (-100점).
-- 점수: 붕어빵 한 마리 = 반죽 + 팥 + 굽기 200 (최대 400) + 빨리 줄수록 보너스.
+1. **Hold → release** to pour batter. Let go in the green zone.
+2. **Hold → release** to pipe red bean from head to tail. Let go at the flag.
+3. The lid closes and the wheel turns to the next empty mold.
+4. Molds keep cooking, flip on their own, and pop out when golden.
+5. Once the rack holds enough fish for the first customer's order, it is bagged and served automatically. Customers who wait too long walk away.
 
-## 파일 구조
+## How it works
 
-```
-index.html      ← 3D 캔버스 + HTML UI + Three.js 불러오기(importmap)
-style.css       ← UI (점수, 식힘망 개수, 게이지, 손님 말풍선, 시작/종료 화면)
-sound.js        ← 배경음악 + 효과음 (Web Audio로 합성, 오디오 파일 없음)
-i18n.js         ← 한국어 / 영어 글자
-js/art2d.js     ← 붕어빵 외곽선, 비늘·눈·지느러미 결, 반죽 그림 (2D)
-js/textures.js  ← 코드로 그린 텍스처: 붕어빵 표면/요철/두께, 무쇠, 스테인리스, 밤거리, 간판, 천막 물결
-js/models.js    ← 붕어빵, 반죽, 팥(+팥알), 주전자, 짤주머니, 봉투
-js/stall.js     ← 포장마차 무대, 원판 기계(틀 8개, 뚜껑, 표시등), 식힘망, 손님 인형
-js/main.js      ← 게임 흐름, 입력, 매 프레임 3D/UI 맞추기
-```
+- **State machine:** `S.fs` tracks the front mold (`opening → pour → bean → cover → closing → rotating`). The single button does something different in each state.
+- **Rotating wheel:** 8 molds sit on one rotor group, so turning the wheel is a single `rotation.y`. Each mold has its own cooking value. `autoTake()` pops a mold out when it turns golden, and `nextFrontStep()` skips molds that are still busy.
+- **Fish shape:** blurring the fish silhouette gives a thickness map that lifts a dense mesh. The body ends up plump and the fins and tail thin. Scales use a bump map.
+- **Red bean:** a `TubeGeometry` grows from the head toward the nozzle while the button is held.
+- **Customers:** a queue with a patience bar per customer. HTML speech bubbles follow the 3D heads using `project(camera)`.
+- **Sound:** all music and sound effects are synthesized with the Web Audio API, with no audio files.
 
-> 모듈을 쓰기 때문에 **Live Server** 나 **GitHub Pages** 같은 웹 서버로 열어야 해요 (더블클릭 X).
+## Files
 
----
+| File | Role |
+|---|---|
+| `index.html`, `style.css` | 3D canvas and HTML UI |
+| `js/main.js` | Game loop, input, state, UI |
+| `js/stall.js` | Street stall, rotating wheel, cooling rack, customers |
+| `js/models.js` | Fish, batter, red bean, kettle, piping bag, paper bag |
+| `js/textures.js`, `js/art2d.js` | Textures drawn in code, fish outline |
+| `sound.js`, `i18n.js` | Sound and Korean/English text |
 
-## 코드가 어떻게 돌아가는지
-
-### 1. 원판 기계 (stall.js `makeWheel`)
-- 틀 8개를 원 위에 45°마다 배치: 위치 `(sin a · R, y, cos a · R)`, 회전 `a − 90°` → 붕어빵 머리가 바깥을 봐요.
-- 틀 하나 = `pivot`(원판 위 자리) → `inner`(뒤집기용) → `base`(틀 아랫판, 반죽·팥·붕어빵이 여기 들어감) + `lid`(뚜껑, 옆 모서리 경첩 기준으로 열림).
-- 8개 틀은 전부 `rotor` 그룹 안에 있어서, `rotor.rotation.y` 하나만 바꾸면 원판 전체가 돌아요.
-- 앞에 온 틀 번호가 `k`면 원판 각도는 `−k × 45°`.
-
-### 2. 게임 흐름: "앞 틀 상태 머신" (main.js `updateFront`)
-`S.fs` 가 앞 틀 상태예요.
-```
-opening → pour → bean → cover → closing → rotating ─┐
-   ↑                                                  │ 앞 틀이 굽는 중이면 → 다음 틀로 빠르게 rotating
-   └──────────── (빈 틀) ←───────────────────────────┘   8개 전부 굽는 중이면 → waiting
-```
-- `press()` / `release()` 는 `S.fs` 에 따라 다르게 반응 → 버튼 하나로 반죽(꾹), 팥(꾹).
-- `nextFrontStep()`: 앞 틀이 비었으면 반죽 시작, 굽는 중이면 다음 빈 틀로 0.35초 만에 휙.
-- 반죽·팥·붕어빵 3D 물체는 하나씩만 있고, 앞에 오는 틀이 바뀔 때마다 `attachFront()` 로 그 틀의 `base` 에 옮겨 달아요.
-
-### 3. 여러 개가 동시에 익어요 (`updateSlots`)
-- `S.slots[i]` 마다 `cooking`, 익힘 `d`, 익는 속도 `rate` 를 따로 가져요. 매 프레임 굽는 틀 전부 `d` 가 올라가요.
-- `d ≥ 0.34` 가 되는 순간 `flipT` 애니메이션으로 틀이 한 바퀴 휙 (자동 뒤집기).
-- `d ≥ target`(노릇, 약 0.64~0.72)이 되면 `autoTake()`: 뚜껑이 열리고(`popT`) 붕어빵이 포물선으로 식힘망에 날아가요(`updateFlying`). 어느 위치에 있든 자동이라 타지 않아요.
-- 표시등 색은 `setLamp()` 가 `d` 로 정해요.
-
-### 4. 손님 줄 + 자동 전달 (`updateCustomers`, `updateServe`)
-- 몇 초마다 손님 생성 (1~3개 주문, 인내심 = 60초 + 개수×14초). 최대 4명이 줄 서요.
-- 맨 앞 손님 주문 개수 ≤ 식힘망 개수가 되면 점수 높은 붕어빵부터 골라 봉투에 담고, 봉투가 포물선으로 손님에게 날아가요.
-- 손님 머리 위 말풍선은 HTML. 3D 머리 위치를 `project(camera)` 로 화면 좌표로 바꿔서 매 프레임 따라다녀요.
-
-### 5. 붕어빵 3D (배는 통통, 끝은 날렵하게)
-- 실루엣을 블러한 **두께 지도** → 촘촘한 판의 점들을 그만큼 들어올림 → 넓은 몸통은 볼록, 꼬리·지느러미는 얇게.
-- 비늘·눈·지느러미 결은 `bumpMap`, 익는 색은 `crustColor(d)`.
-
-### 6. 팥
-- `TubeGeometry` 로 머리부터 깍지 위치까지 굵은 앙금 줄 → 누르는 동안 매 프레임 다시 만들어서 "쭉 짜지는" 모습. 굵기는 `models.js` 의 `BEAN_R`.
-
-### 성능
-- 뚜껑 8개 위의 붕어빵 모양은 촘촘할 필요가 없어서 가벼운 버전(56칸)을, 식힘망 붕어빵은 160칸 버전을 써요. 폰에서도 부드럽게.
-
-### 7. 포장마차 분위기 (stall.js `makeStall`)
-- 밤거리 배경(건물 실루엣 + 흐릿한 불빛), 빨간 천막 물결 테두리, 노란 카트 테두리 + 빨간 줄, 투명 비닐, 전구 3개(점광원), 스테인리스 조리대, 노란 가격 간판.
-
-### 8. 소리 (sound.js)
-반죽 꿀렁, 팥 쮸욱, 지글지글(굽는 틀 수에 따라 커짐), 철컹(뚜껑·뒤집기), 바스락, 짤랑, 로파이 배경음악 — 전부 코드로 합성.
+**Built with:** Three.js (r170). Use a local server (e.g. Live Server) to run it, because ES modules don't load from `file://`.
