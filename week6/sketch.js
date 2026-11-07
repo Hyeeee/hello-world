@@ -1,7 +1,8 @@
 /*
-  DRUM — a minimal 3D world clock (v29)
+  DRUM — a minimal 3D world clock (v31, color mode)
   --------------------------------------------------------------
-  Black & white only. Hours, minutes and seconds sit on stacked
+  Black & white by default, with an optional COLOR mode where you
+  pick a palette (or your own color). Hours, minutes and seconds sit on stacked
   rings (like a rotating drum). Each ring turns so that the
   current value always faces you at the front marker.
 
@@ -12,6 +13,8 @@
           double-click = switch view (DRUM <-> DIAL)
           click a city at the bottom = switch city
   Keys  : 1-9 = city · V = view · L = light / dark mode
+          C = color mode (press again for the next palette)
+          I = invert the colors (in COLOR mode)
   --------------------------------------------------------------
 */
 
@@ -45,11 +48,32 @@ let lightMode = false;
 let lastDaytime = null;   // was the selected city in daytime last frame? (null = not checked yet)
 // daytime = 6:00 to 17:59 in that city -> light mode, otherwise dark mode
 const DAY_START = 6, DAY_END = 18;
-let theme = 0;            // 0 = dark, 1 = light (animated so the switch fades)
 
-// theme colors (RGB)
-const DARK  = { bg: [0, 0, 0],       ink: [255, 255, 255] };
-const LIGHT = { bg: [255, 255, 255], ink: [0, 0, 0] };
+// theme colors (RGB). bg = background, ink = everything drawn,
+// accent = only the things that mean "now" (current tick, current number, big time)
+const DARK  = { bg: [0, 0, 0],       ink: [255, 255, 255], accent: [255, 255, 255] };
+const LIGHT = { bg: [255, 255, 255], ink: [0, 0, 0],       accent: [0, 0, 0] };
+
+// COLOR mode: every palette is ONE color in three tones (see toneFromHue):
+// a pale tint for the background, a deep shade for the lines and numbers,
+// and a stronger shade of the same color for "now".
+// e.g. pink = pale pink background + deep pink clock, yellow = pale yellow + dark mustard.
+// INVERT flips it: a deep background of the same color with pale lines and numbers.
+// The last row in the menu is "your own": pick a hue + saturation and it gets the same treatment.
+const HUES = [335, 48, 150, 210, 265, 18];   // pink, yellow, green, blue, lilac, orange (0-360 on the color wheel)
+const HUE_NAMES = ['PINK', 'YELLOW', 'GREEN', 'BLUE', 'LILAC', 'ORANGE'];
+const OWN = HUES.length;  // paletteIndex === OWN means "your own color"
+let colorMode = false;    // true = COLOR mode is on (DARK / LIGHT are ignored)
+let paletteIndex = 0;     // which palette (0-5), or OWN
+let inverted = false;     // false = pale background, true = deep background
+let own = { h: 335, s: 0.75 };   // your own color: hue 0-360, saturation 0-0.9
+let menuOpen = false;     // the COLOR drop-down menu
+let sliders = {};         // the two color sliders in the menu (rebuilt every frame, like hitBoxes)
+let sliderDrag = null;    // which slider your finger / mouse is moving ('h' or 's')
+let menuPress = false;    // the press started on the menu (so it doesn't rotate the clock)
+let menuBox = null;       // where the menu is on screen this frame
+// the colors on screen right now; they ease toward the chosen palette so every switch fades
+let cur = { bg: [0, 0, 0], ink: [255, 255, 255], accent: [255, 255, 255] };
 let hitBoxes = [];        // clickable text areas (cities, buttons)
 let L;                    // screen layout, recalculated every frame (see computeLayout)
 let canHover = true;      // false on touch screens (no mouse to hover with)
@@ -126,7 +150,7 @@ class Ring {
         const len = this.tick * min((long ? 1.8 : 1) * (isCurrent ? 1.6 : 1), 1.8);
         const p1 = this.point(a, this.r);
         const p2 = this.point(a, this.r - len);
-        stroke(fg(isCurrent ? 255 : depthAlpha(p1.z, this.r, 55, 180)));   // other ticks a bit softer so the current one (white) stands out
+        stroke(isCurrent ? accent() : fg(depthAlpha(p1.z, this.r, 55, 180)));   // other ticks a bit softer so the current one (accent color) stands out
         strokeWeight(isCurrent ? 2.2 : 1.25);
         line(p1.x, p1.y, p2.x, p2.y);
       }
@@ -152,6 +176,7 @@ function setup() {
   canHover = window.matchMedia('(hover: hover)').matches;
 
   addCurrentLocation();
+  loadColorChoice();
 
   // prepare a time formatter for every city (converts real time -> that time zone)
   for (const c of CITIES) {
@@ -181,8 +206,8 @@ function setup() {
 //  DRAW
 // =================================================================
 function draw() {
-  // fade between dark and light mode
-  theme = lerp(theme, lightMode ? 1 : 0, 0.1);
+  // fade toward the chosen colors (dark, light or a color palette)
+  easeColors();
   background(mixTheme('bg'));
   hitBoxes = [];
 
@@ -217,9 +242,10 @@ function draw() {
   // AUTO THEME: morning / daytime in the selected city = light, evening / night = dark.
   // It only switches when the city changes or its day/night flips, so if you
   // press DARK / LIGHT yourself, your choice stays until then.
+  // In COLOR mode the palette you picked always stays.
   const daytime = t.h >= DAY_START && t.h < DAY_END;
   if (daytime !== lastDaytime) {
-    setLight(daytime);
+    if (!colorMode) setLight(daytime);
     lastDaytime = daytime;
   }
   // Whole numbers only: each ring "clicks" to the exact current value,
@@ -384,7 +410,7 @@ function drawFlatText(str, a, r, y, size, highlight) {
   push();
   applyMatrix(pu.x - p.x, pu.y - p.y, pv.x - p.x, pv.y - p.y, p.x, p.y);
   noStroke();
-  fill(fg(highlight ? 255 : depthAlpha(p.z, r, 55, 175)));   // other numbers softer, the current one pure white
+  fill(highlight ? accent() : fg(depthAlpha(p.z, r, 55, 175)));   // other numbers softer, the current one in the accent color
   textFont(FONT);
   textSize(size);
   textAlign(CENTER, CENTER);
@@ -405,7 +431,7 @@ function drawReadout(city, t, now) {
   textSize(11);
   text((city.here ? '● ' : '') + city.name, x, y);   // ● = your current location
 
-  fill(fg(255));
+  fill(accent());
   textFont(FONT);
   textSize(L.head.timeSize);
   text(nf(t.h, 2) + ':' + nf(t.m, 2) + ':' + nf(t.s, 2), x - 2, L.head.timeY);
@@ -482,7 +508,10 @@ function edgeFade(x1, x2, bg, y, h) {
 // Top-right controls: segmented text buttons on every screen size.
 function drawControls() {
   drawTextButtons();
-  cursor(hitBoxes.some((b) => isInside(b)) ? HAND : dragging ? MOVE : ARROW);
+  menuBox = null;
+  sliders = {};
+  if (colorMode && menuOpen) drawColorMenu();
+  cursor(hitBoxes.some((b) => !b.quiet && isInside(b)) ? HAND : dragging && !menuPress ? MOVE : ARROW);
 }
 
 // Minimal text buttons. The chosen word is bright with a thin underline,
@@ -490,7 +519,8 @@ function drawControls() {
 function drawTextButtons() {
   const groups = [
     { options: ['DRUM', 'DIAL'],  selected: viewDial ? 1 : 0,  set: (k) => setView(k === 1) },
-    { options: ['DARK', 'LIGHT'], selected: lightMode ? 1 : 0, set: (k) => setLight(k === 1) },
+    { options: ['DARK', 'LIGHT', 'COLOR'], selected: colorMode ? 2 : lightMode ? 1 : 0,
+      set: (k) => (k === 2 ? tapColorButton() : setLight(k === 1)) },
   ];
   const c = L.ctrl;
   textFont(FONT);
@@ -579,10 +609,9 @@ function nameFromTimeZone(tz) {
 // =================================================================
 //  HELPERS
 // =================================================================
-// mix a theme color between DARK and LIGHT using the animated 'theme' value
+// the theme color on screen right now ('bg', 'ink' or 'accent')
 function mixTheme(name) {
-  const a = DARK[name], b = LIGHT[name];
-  return [lerp(a[0], b[0], theme), lerp(a[1], b[1], theme), lerp(a[2], b[2], theme)];
+  return cur[name];
 }
 
 // foreground "ink" color with transparency: white in dark mode, near-black in light mode
@@ -591,13 +620,332 @@ function fg(alpha) {
   return color(c[0], c[1], c[2], alpha);
 }
 
+// the "now" color: same as ink in DARK / LIGHT, the palette's accent in COLOR mode
+function accent() {
+  const c = mixTheme('accent');
+  return color(c[0], c[1], c[2]);
+}
+
 function setLight(on) {
   lightMode = on;
+  colorMode = false;
+  menuOpen = false;
+  saveColorChoice();
   document.body.style.background = on ? '#fff' : '#000';
 }
 
 function toggleLight() {
   setLight(!lightMode);
+}
+
+// =================================================================
+//  COLOR MODE
+// =================================================================
+// Which colors should be on screen? (DARK, LIGHT or the chosen palette)
+function targetColors() {
+  if (!colorMode) return lightMode ? LIGHT : DARK;
+  return paletteAt(paletteIndex, inverted);
+}
+
+// palette number i (or OWN), pale or inverted
+function paletteAt(i, inv) {
+  return i === OWN ? toneFromHue(own.h, own.s, inv) : toneFromHue(HUES[i], 0.85, inv);
+}
+
+// every frame, move each color 10% of the way toward its target = a soft fade
+function easeColors() {
+  const t = targetColors();
+  for (const name of ['bg', 'ink', 'accent']) {
+    for (let i = 0; i < 3; i++) cur[name][i] = lerp(cur[name][i], t[name][i], 0.1);
+  }
+}
+
+// One color -> a whole palette, all in the same color family:
+//   bg     = a pale tint (very light)
+//   ink    = a deep, calmer shade for the lines and numbers
+//   accent = a deep, more vivid shade for "now"
+// INVERT swaps the roles: a deep background, pale lines and numbers,
+// and a light but more colorful "now".
+//
+// The deep shades all use the SAME lightness and colorfulness as the green palette
+// (the one that looked best), measured in OKLCH, a color space where equal numbers
+// look equally light / equally colorful to our eyes. Only the hue changes.
+// So pink, blue, orange... all feel equally deep and equally saturated.
+const INK_TONE = { L: 0.421, C: 0.0773 };      // green's ink:    #275939 (also the inverted background)
+const ACCENT_TONE = { L: 0.568, C: 0.1431 };   // green's accent: #088e4c
+const LIGHT_ACCENT = { L: 0.86, C: 0.105 };    // "now" on a deep background: light, still colorful
+
+const toneCache = {};   // the math below is a bit heavy, so each palette is only worked out once
+function toneFromHue(h, s, inv = false) {
+  const key = h.toFixed(1) + '|' + s.toFixed(3) + '|' + inv;
+  if (toneCache[key]) return toneCache[key];
+  const pale = hslToRgb(h, s, 0.94);
+  // which hue the deep shades should have: the hue of a dark, readable shade of this color
+  const hue = rgbToOklch(darkenUntil(h, s, 0.5, pale, 3.6)).h;
+  const k = min(1, s / 0.85);                    // greyer colors get greyer shades
+  const deep = oklchToRgb(INK_TONE.L, INK_TONE.C * k, hue);
+  const tones = inv
+    ? { bg: deep, ink: pale, accent: oklchToRgb(LIGHT_ACCENT.L, LIGHT_ACCENT.C * k, hue) }
+    : { bg: pale, ink: deep, accent: oklchToRgb(ACCENT_TONE.L, ACCENT_TONE.C * k, hue) };
+  toneCache[key] = tones;
+  return tones;
+}
+
+// start at lightness l and step darker until the color has enough contrast on bg
+function darkenUntil(h, s, l, bg, minContrast) {
+  let c = hslToRgb(h, s, l);
+  while (contrast(c, bg) < minContrast && l > 0.06) {
+    l -= 0.02;
+    c = hslToRgb(h, s, l);
+  }
+  return c;
+}
+
+// ---- small color math ----
+// hue 0-360, saturation + lightness 0-1  ->  [r, g, b] 0-255
+function hslToRgb(h, s, l) {
+  const k = (n) => (n + h / 30) % 12;
+  const a = s * min(l, 1 - l);
+  const f = (n) => l - a * max(-1, min(k(n) - 3, 9 - k(n), 1));
+  return [f(0) * 255, f(8) * 255, f(4) * 255];
+}
+
+// [r, g, b] -> hue 0-360 and saturation 0-1 (HSL)
+function rgbToHs(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = max(r, g, b), mn = min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  if (d === 0) return { h: 0, s: 0 };            // a grey: no hue, the palette stays grey
+  const s = d / (1 - abs(2 * l - 1));
+  let h;
+  if (mx === r) h = ((g - b) / d) % 6;
+  else if (mx === g) h = (b - r) / d + 2;
+  else h = (r - g) / d + 4;
+  return { h: (h * 60 + 360) % 360, s };
+}
+
+// ---- OKLCH (L = lightness 0-1, C = colorfulness, h = hue 0-360) ----
+const toLinear = (x) => { x /= 255; return x <= 0.04045 ? x / 12.92 : pow((x + 0.055) / 1.055, 2.4); };
+const fromLinear = (x) => 255 * (x <= 0.0031308 ? 12.92 * x : 1.055 * pow(x, 1 / 2.4) - 0.055);
+
+function rgbToOklch(c) {
+  const r = toLinear(c[0]), g = toLinear(c[1]), b = toLinear(c[2]);
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const L = 0.2104542553 * l + 0.7936617850 * m - 0.0040720468 * s;
+  const A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+  const B = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+  return { L, C: sqrt(A * A + B * B), h: (degrees(atan2(B, A)) + 360) % 360 };
+}
+
+// OKLCH -> [r, g, b]. Some colors can't be that colorful on a screen
+// (a deep yellow, for example), so we lower C a little until it fits.
+function oklchToRgb(L, C, h) {
+  const rad = radians(h);
+  let c = C, lin;
+  for (;;) {
+    const A = c * cos(rad), B = c * sin(rad);
+    const l = pow(L + 0.3963377774 * A + 0.2158037573 * B, 3);
+    const m = pow(L - 0.1055613458 * A - 0.0638541728 * B, 3);
+    const s = pow(L - 0.0894841775 * A - 1.2914855480 * B, 3);
+    lin = [
+      4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+      -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+      -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+    ];
+    if (lin.every((v) => v >= -0.0001 && v <= 1.0001) || c <= 0) break;
+    c -= 0.002;
+  }
+  return lin.map((v) => fromLinear(constrain(v, 0, 1)));
+}
+
+// how much two colors stand apart (1 = same, 21 = black on white)
+function contrast(a, b) {
+  const lum = (c) => {
+    const v = c.map((x) => {
+      x /= 255;
+      return x <= 0.03928 ? x / 12.92 : pow((x + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+  };
+  const L1 = lum(a), L2 = lum(b);
+  return (max(L1, L2) + 0.05) / (min(L1, L2) + 0.05);
+}
+
+function setColorMode(on) {
+  colorMode = on;
+  if (!on) { lastDaytime = null; menuOpen = false; }   // back to auto dark / light
+  saveColorChoice();
+  syncPageColor();
+}
+
+// the page behind the canvas gets the same background (no white flash when you scroll on a phone)
+function syncPageColor() {
+  const bg = targetColors().bg;
+  document.body.style.background = `rgb(${round(bg[0])},${round(bg[1])},${round(bg[2])})`;
+}
+
+// COLOR button: the first tap turns COLOR mode on and opens the menu,
+// later taps open / close the menu
+function tapColorButton() {
+  if (!colorMode) { setColorMode(true); menuOpen = true; }
+  else menuOpen = !menuOpen;
+}
+
+function choosePalette(i) {
+  paletteIndex = i;
+  setColorMode(true);
+}
+
+function setInverted(on) {
+  inverted = on;
+  setColorMode(true);
+}
+
+// ---- the COLOR drop-down menu ----
+// A small panel under the buttons, in the clock's own colors:
+//   one row per palette (a swatch + its name), the chosen one has a thin ring
+//   INVERT with a small switch
+//   and, when your own color is chosen, two thin sliders: HUE and SATURATION
+function drawColorMenu() {
+  const c = L.ctrl;
+  const small = L.short;                         // phone on its side: a bit tighter
+  const W = 156, pad = 14;
+  const rowH = small ? 22 : 28;
+  const sliderH = small ? 26 : 36;
+  const showSliders = paletteIndex === OWN;
+  const x2 = c.right, x1 = x2 - W;
+  const top = c.lineY + 18;
+  const H = pad + (OWN + 1) * rowH + 10 + rowH + (showSliders ? 6 + 2 * sliderH : 0) + pad - 6;
+  menuBox = { x: x1, y: top, w: W, h: H };
+
+  // the panel itself: the background color with a hairline border
+  const bg = mixTheme('bg');
+  fill(bg[0], bg[1], bg[2], 246);
+  stroke(fg(45));
+  strokeWeight(1);
+  rect(x1, top, W, H);
+
+  textFont(FONT);
+  textSize(10);
+  textAlign(LEFT, CENTER);
+
+  // one loop for every palette, the last row is your own color
+  for (let i = 0; i <= OWN; i++) {
+    const y = top + pad + i * rowH + rowH / 2 - 4;
+    const row = { x: x1, y: y - rowH / 2, w: W, h: rowH, action: () => choosePalette(i) };
+    const chosen = i === paletteIndex;
+    const hover = !chosen && canHover && isInside(row);
+    const pal = paletteAt(i, inverted);
+    const sx = x1 + pad + 7;
+
+    // swatch: the background color, a hairline in the ink color, a dot of the "now" color
+    fill(pal.bg[0], pal.bg[1], pal.bg[2]);
+    stroke(pal.ink[0], pal.ink[1], pal.ink[2], 120);
+    strokeWeight(1);
+    circle(sx, y, 14);
+    noStroke();
+    fill(pal.accent[0], pal.accent[1], pal.accent[2]);
+    circle(sx, y, 5);
+    if (chosen) {                                // thin ring around the chosen one
+      noFill();
+      stroke(fg(255));
+      circle(sx, y, 21);
+    }
+    noStroke();
+    fill(fg(chosen ? 255 : hover ? 200 : 120));
+    text(i === OWN ? 'YOUR OWN' : HUE_NAMES[i], sx + 18, y);
+    hitBoxes.push(row);
+  }
+
+  // hairline, then INVERT with a small switch
+  let y = top + pad + (OWN + 1) * rowH;
+  stroke(fg(40));
+  line(x1 + pad, y, x2 - pad, y);
+  y += 10 + rowH / 2 - 4;
+  const inv = { x: x1, y: y - rowH / 2, w: W, h: rowH, action: () => setInverted(!inverted) };
+  const hoverInv = canHover && isInside(inv);
+  noStroke();
+  fill(fg(inverted ? 255 : hoverInv ? 200 : 120));
+  text('INVERT', x1 + pad, y);
+  const sw = 22, sh = 12, swX = x2 - pad - sw;
+  noFill();
+  stroke(fg(inverted ? 255 : 110));
+  strokeWeight(1);
+  rect(swX, y - sh / 2, sw, sh, sh / 2);
+  noStroke();
+  fill(fg(inverted ? 255 : 110));
+  circle(inverted ? swX + sw - sh / 2 : swX + sh / 2, y, 6);
+  hitBoxes.push(inv);
+
+  // your own color: HUE and SATURATION sliders
+  if (showSliders) {
+    y += rowH / 2 + 6;
+    drawSlider('h', 'HUE', x1 + pad, x2 - pad, y, sliderH, own.h / 360,
+               (v) => toneFromHue(v * 360, 0.85).accent);
+    drawSlider('s', 'SATURATION', x1 + pad, x2 - pad, y + sliderH, sliderH, own.s / 0.9,
+               (v) => toneFromHue(own.h, v * 0.9).accent);
+  }
+
+  // the rest of the panel catches taps, so tapping between rows doesn't close it
+  hitBoxes.push({ ...menuBox, quiet: true, action: () => {} });
+}
+
+// A thin color strip with a round handle. colorAt(v) gives the color at 0-1.
+function drawSlider(key, label, sx1, sx2, y, h, value, colorAt) {
+  noStroke();
+  fill(fg(120));
+  textSize(9);
+  text(label, sx1, y + 6);
+  const stripY = y + h - 12;
+  // the strip: lots of 2px slices, each in its own color
+  for (let x = sx1; x < sx2; x += 2) {
+    const col = colorAt((x - sx1) / (sx2 - sx1));
+    fill(col[0], col[1], col[2]);
+    rect(x, stripY - 2, 2, 4);
+  }
+  // the handle sits on the strip, filled with the color you picked
+  const hx = lerp(sx1, sx2, constrain(value, 0, 1));
+  const col = colorAt(constrain(value, 0, 1));
+  fill(col[0], col[1], col[2]);
+  stroke(fg(255));
+  strokeWeight(1.5);
+  circle(hx, stripY, 12);
+  // a tall, forgiving touch area (fingers are bigger than a 4px line)
+  sliders[key] = { x: sx1 - 8, y: stripY - 16, w: sx2 - sx1 + 16, h: 32, x1: sx1, x2: sx2 };
+  hitBoxes.push({ ...sliders[key], action: () => {} });
+  textSize(10);
+}
+
+// move a slider to the pointer's x position
+function setSlider(key, x) {
+  const s = sliders[key];
+  if (!s) return;
+  const v = constrain((x - s.x1) / (s.x2 - s.x1), 0, 1);
+  if (key === 'h') own.h = round(v * 359);
+  else own.s = round(v * 90) / 100;
+  paletteIndex = OWN;
+  colorMode = true;
+  syncPageColor();
+}
+
+// remember the color choice for next time (the page still works if storage is blocked)
+function saveColorChoice() {
+  try {
+    localStorage.setItem('drumClockColor', JSON.stringify({ on: colorMode, i: paletteIndex, inv: inverted, h: own.h, s: own.s }));
+  } catch (e) {}
+}
+
+function loadColorChoice() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('drumClockColor'));
+    if (!saved) return;
+    paletteIndex = constrain(int(saved.i) || 0, 0, OWN);
+    inverted = saved.inv === true;
+    if (isFinite(saved.h) && isFinite(saved.s)) own = { h: constrain(saved.h, 0, 359), s: constrain(saved.s, 0, 0.9) };
+    if (saved.on) setColorMode(true);
+  } catch (e) {}
 }
 
 function getTime(city, date) {
@@ -669,6 +1017,12 @@ function pressAt(p) {
   pressX = lastX = p.x;
   pressY = lastY = p.y;
   dragging = false;
+  // pressing on the color menu never rotates the clock; on a slider it moves the slider
+  menuPress = !!menuBox && isInside(menuBox, p.x, p.y);
+  sliderDrag = null;
+  for (const k in sliders) {
+    if (isInside(sliders[k], p.x, p.y)) { sliderDrag = k; setSlider(k, p.x); }
+  }
   // pressing on the city row scrolls the row instead of rotating the clock
   listDragging = L && L.list.maxScroll > 0 && p.y >= L.list.top - 12;
   if (listDragging) listVel = 0;
@@ -683,6 +1037,8 @@ function dragTo(p) {
   lastY = p.y;
   if (!isFinite(dx) || !isFinite(dy)) return;
   if (dist(p.x, p.y, pressX, pressY) > 6) dragging = true;
+  if (sliderDrag) { setSlider(sliderDrag, p.x); return; }
+  if (menuPress) return;
   if (listDragging) {
     listScroll -= dx;            // move the row with the finger
     listVel = -dx;               // remember the speed for the glide
@@ -699,10 +1055,13 @@ function releaseAt(p) {
     for (const b of hitBoxes) {
       if (isInside(b, p.x, p.y)) { b.action(); hitSomething = true; break; }
     }
+    if (!hitSomething && menuOpen) { menuOpen = false; hitSomething = true; }   // tap outside = close the menu
   }
   const wasTap = !dragging;
   dragging = false;
   listDragging = false;
+  menuPress = false;
+  if (sliderDrag) { sliderDrag = null; saveColorChoice(); }
   return { wasTap, hitSomething };
 }
 
@@ -762,6 +1121,11 @@ function keyPressed() {
   if (key >= '1' && key <= String(CITIES.length)) setCity(int(key) - 1);
   if (key === 'v' || key === 'V') toggleView();
   if (key === 'l' || key === 'L') toggleLight();
+  if (key === 'c' || key === 'C') {      // first press = COLOR mode, next presses = next palette
+    if (colorMode) choosePalette((paletteIndex + 1) % (OWN + 1));
+    else setColorMode(true);
+  }
+  if ((key === 'i' || key === 'I') && colorMode) setInverted(!inverted);
 }
 
 function windowResized() {
