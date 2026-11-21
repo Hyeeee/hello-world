@@ -1,96 +1,137 @@
-# Atmos · Make your sky
+# Atmos · a clearer check in and one design system
 
 Hello World final project · proposal and spike for Week 11 (Nov 23)
 Marin Chung
 
-**Try the spike:** https://hyeeee.github.io/hello-world/week10/
-**Current Atmos:** https://atmos-cd-347fa3dcbb.netlify.app/
+**Atmos v2 (this proposal):** https://hyeeee.github.io/hello-world/week10/atmos-v2/
+**Atmos today:** https://atmos-cd-347fa3dcbb.netlify.app/
 
-![Three skies made with the spike: bright, soft, heavy](img/skies.jpg)
+![Check in panel before and after](img/checkin-before-after.jpg)
 
 ## 1. Concept and audience
 
-Atmos is a small web app I made in September where weather and mood journaling live in the same place. It asks one question, *What's the weather inside you today?*, and puts everyone's answers on a shared globe.
+Atmos is a small web app I made in September. It puts live weather and mood journaling in the same place and asks one question, *What's the weather inside you today?* Everyone's answers show up on a shared globe.
 
-The question is poetic, but answering it right now is just a form. You tap one of six mood buttons and type a line. For the final I want to redesign that one moment so that you answer by **making your inner weather with your hands**. You drag to gather clouds, hold to make it rain, and flick up for sun or down for dusk. The sky you make becomes your entry.
+For the final I'm not starting something new. I want to keep Atmos and make it better in two ways.
 
-**Why it matters to me.** Picking a word like "Calm" means you already know how you feel. Making a sky lets you find it while you do it, and it's closer to how weather actually feels.
+1. **One design system.** Atmos grew fast while I was vibe coding it, so the same kind of thing often looks a bit different in different places.
+2. **A check in people actually notice and understand.** Right now the check in is a static form. Everything in it has the same weight, so it's hard to tell where to start.
 
-**Who it's for.** People who already check the weather every morning and would spend 20 seconds on a small check in. Classmates and friends can help test it, and Atmos already has real visitors from 12 cities.
+**Who it's for.** People who check the weather every morning and might spend 20 seconds on a small check in. Classmates and friends who haven't seen Atmos can help test it.
 
-**Why not "make people come back"?** I looked at the Atmos data first. 162 devices visited but only 15 came back on a second day, and only 3 people posted more than once. I thought about designing for retention, but I can't show that in three weeks, and I'd rather make the one moment someone spends here really good.
+**Why these two.** When I looked at the Atmos data, 162 devices visited but only 31 people posted. On a phone the check in sits below the weather, the forecast, the timeline and the globe, so you have to scroll 3 or 4 screens to even see it. And once you get there, the form doesn't tell you what to do first.
 
-## 2. Core experience
+## 2. What I found
 
-1. **Arrival.** The question sits on an empty, calm sky. One hint line says what your hands can do.
-2. **Make.** You drag, hold and flick until the sky looks like you feel. It reacts right away.
-3. **Name it (optional).** You pick the closest mood and add a line if you want.
-4. **Place it.** Your sky turns into a small glyph and lands on the Atmos globe where you are.
-5. **Recovery.** Clear starts over. A "⋯" button opens sliders, so it also works without gestures, with a keyboard, or with a screen reader.
+**Design system audit** (counted from the CSS of the live site)
 
-## 3. Scope
+| | Before | After (v2) |
+|---|---|---|
+| Font sizes | 22 different px values (8 to 30, many half pixels like 8.5, 11.5, 15.5) | 7 steps |
+| Corner radius | 13 values (2 to 24px) | 4 steps plus pill |
+| Spacing values | 18 (including 3, 5, 7, 9, 22, 26px) | 12, on a 2 and 4px rhythm |
 
-**In one sentence:** make the Atmos check in something you do with your hands, so the sky you make shows how you feel.
+Things that do the same job but look different:
+- **Toggles.** °C/°F, All/This city/Mine and the globe modes fill with ink when selected, but Public/Only me used a raised white style.
+- **Inputs.** The nickname was a dashed underline and the journal was a box.
+- **Mood names.** "Cozy" in the picker but "COZY" in small caps mono in the feed.
+
+What I'm keeping on purpose: serif is for people's words and feelings (the question, the journal, posts, today's phrase), and sans is for the interface and data. That rule was already there and I like it, so now it's written down.
+
+![Atmos today on desktop](img/atmos-before.jpg)
+
+## 3. Core experience (v2 check in)
+
+The check in now opens one step at a time, with the same pieces as before.
+
+1. **Mood.** Only the question and the six moods show up at first. The moods are bigger and move very gently, so it's clear this is where you start. A small 1 2 3 line shows where you are.
+2. **A line.** After you pick a mood, the text box opens and asks a question that fits your mood, like "What's keeping things calm?" for Calm.
+3. **Post.** Once you write something, the nickname, location, Public/Only me and Post appear.
+4. **Done.** After posting it says "Posted. You can find it in the feed below." and goes back to step 1.
+
+Recovery stays the same as before. You can change the mood any time, a missing field is still pointed out, and Only me still keeps it private. With reduced motion turned on, the moods don't move.
+
+## 4. Scope
+
+**In one sentence:** keep Atmos as it is, but make it look like one system and make the check in obvious.
 
 | Priority | What |
 |---|---|
-| Must | Gesture sky maker (clouds, rain, light) built into Atmos as the new check in |
-| Must | Saving the sky with the post and showing it again in the feed |
-| Must | A no-gesture way to make the same sky (sliders, keyboard) |
-| Should | Each saved sky becomes its own small glyph on the globe |
-| Should | A short first-time hint, tested with someone who has never seen it |
-| Nice | Wind and temperature as extra gestures |
-| Nice | Sound that follows the rain |
+| Must | Type, radius and spacing scales as tokens, applied across the whole app |
+| Must | Same style for every toggle, input and mood tag |
+| Must | Step by step check in in EN and KO |
+| Must | Test it with people who've never used Atmos |
+| Should | On phones, make the check in easier to reach without scrolling so far |
+| Should | Dark mode check for every changed part |
+| Nice | A small design system page in Claude Design that documents the tokens |
 
-**Stopping point.** Someone new can make a sky, post it, and find it on the globe and in the feed without my help.
-**What I'd cut first.** The glyph on the globe. The sky can show in the feed only.
+**Stopping point.** A new person can find the check in and post without help on a phone and on a laptop, and nothing in the UI uses values outside the scales.
+**What I'd cut first.** The design system page. The tokens in the code are enough for the class.
 
-## 4. System plan
+## 5. System plan
 
-- **Front end.** Atmos is one HTML file with a canvas globe. The sky maker is its own canvas, and the spike is written so it can drop in as a module.
-- **State.** A whole sky is just 162 small numbers: a 16 × 10 grid of cloud density, plus rain and light. That's small enough to save next to each post and to fit inside a share link.
-- **Data.** Atmos already uses Supabase (`posts`, `devices`, `metoo`, `visits`). I'd add one `sky` column to `posts` and update the `create_post` and `feed` functions. Old posts without a sky keep their mood icon.
-- **External.** Open-Meteo for real weather (already in Atmos). No new services and no paid accounts.
-- **Resources.** My laptop, my phone, and 3 to 5 friends for tests.
+- **Source.** Atmos is built in Claude Design and deployed to Netlify. I'm not touching the live site yet. v2 is a copy built from the live file, and I'll bring the changes back into Claude Design once they're tested.
+- **How v2 is made.** `tools/make_v2.py` reads the live Atmos file and
+  - snaps every font size, radius and spacing value to the scales and names them as tokens like `--text-sm` and `--radius-md`,
+  - gives toggles, inputs and mood tags one shared style,
+  - wraps the check in into three steps and adds a small script that opens each step.
+- **Data.** Same Supabase as Atmos (`posts`, `devices`, `metoo`, `visits`). No database changes. I added one line so the mood also resets after posting.
+- **Tools.** Claude for the code, Playwright to take screenshots on phone and laptop sizes and check nothing broke.
 
-## 5. Spike
+**Tokens**
 
-**Question.** If someone makes a sky with only their hands, can another person read the feeling from it?
+| Token | Value | Used for |
+|---|---|---|
+| `--text-xs` | 10px | Mono meta like city, time, counts |
+| `--text-sm` | 12px | Captions, toggle buttons, tags |
+| `--text-md` | 14px | Body and UI text |
+| `--text-lg` | 16px | Section titles |
+| `--text-xl` | 18px | People's words (serif) |
+| `--text-2xl` | 22px | Brand, Korean question |
+| `--text-3xl` | 28px | The question (serif) |
+| `--radius-sm / md / lg / xl` | 8 / 12 / 16 / 24px | Inner buttons / controls and inputs / boxes / panels |
 
-**Why this one.** It's the riskiest part. If skies don't read as feelings, the gesture check in is just a toy and the six mood buttons were enough.
+## 6. Spike
 
-**Prediction.** Heavy rain and bright sun will be read right most of the time (Stormy, Blue, Radiant). The in-between skies (Calm, Cozy, Foggy) will get mixed up with each other.
+**Question.** Does the step by step check in help someone who's never seen Atmos find it and finish it?
 
-**Setup.** A standalone page (`index.html` in this folder).
-1. I make a sky with gestures and secretly pick the mood I meant.
-2. The page turns the sky into a link (the whole sky is stored in the link, nothing is saved on a server).
-3. A friend opens the link, sees only the sky, and picks how it feels plus one optional word.
-4. They copy the result and send it back to me.
+**Why this one.** This is the riskiest part. The design system cleanup is careful work but I know how to do it. Whether the new check in actually helps people is the part I don't know yet.
+
+**Prediction.** With the old version people will start typing first and only notice the mood or nickname when Post doesn't work. With v2 they'll go straight to the moods and finish faster. On phones both versions will still have the "where is it" problem, because I haven't moved anything yet.
+
+**Setup.** 4 people who haven't used Atmos. 2 try the old version and 2 try v2, on their phones. I just say "this is Atmos, try leaving how you feel today", then watch without helping.
+- Did they find the check in? How long did it take?
+- Where did they get stuck?
+- Did they finish posting?
+
+They'll post real entries. If they'd rather not share, they can choose Only me.
 
 **Results.** *(to fill in after testing this weekend)*
 
-| # | Tester | I meant | They felt | Their word | Notes |
+| # | Version | Found check in | Time to post | Got stuck at | Finished |
 |---|---|---|---|---|---|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| 1 | Old | | | | |
+| 2 | Old | | | | |
+| 3 | v2 | | | | |
+| 4 | v2 | | | | |
 
-**What it did and didn't show.** *(to fill in)* This only tests whether a sky can be read. It doesn't test whether making one feels good, and it's a small sample from my friends.
+**What it did and didn't show.** *(to fill in)* Four people can show where people get stuck, but not prove that v2 is better overall.
 
-**Next decision.** *(to fill in)* If most skies read close enough, I build it into Atmos. If only the extremes read, I'll keep the sky as the main input but let people add a mood word on top.
+**Next decision.** *(to fill in)* Whether to keep the step order as it is, and whether moving the check in higher on phones becomes a Must.
 
-## 6. Working arrangements
+## 7. Alternative I tried and dropped
 
-- **Source.** Spike and process notes in this repo (`hello-world/week10`). Atmos source will move into its own repo for the final.
-- **Run it.** Open the GitHub Pages link on a phone. To run it locally, open `index.html` in a browser. No build step.
-- **Roles.** Solo project. I need feedback from 3 to 5 people who haven't seen it.
-- **Support.** I'd like feedback on whether the three gestures feel natural, and whether the first-time hint is enough.
-- **Privacy.** The spike saves nothing on a server and the link only holds the sky and the meant mood. In Atmos, entries stay public or private like before.
-- **Accessibility.** Every gesture has a slider and a keyboard key (C clouds, R rain, ↑ ↓ light). Dark skies switch the text to light so it stays readable.
+Before this I tried rebuilding the check in as a full screen sky you make with gestures (`sky-spike/`). It was fun, but it threw away the globe, the panels and the feed, so it stopped being Atmos. I want to improve what's already working, so I dropped it.
+
+## 8. Working arrangements
+
+- **Run it.** Open the v2 link on a phone or laptop. No build step. To rebuild it, run `python3 tools/make_v2.py <atmos index.html> atmos-v2/index.html`.
+- **Roles.** Solo project. I need 4 people who haven't seen Atmos for the test.
+- **Support.** Feedback on whether the steps feel helpful or slow for people who already know what to do.
+- **Privacy.** v2 uses the same database as the live site, so test posts are real. Only me keeps them private. I only looked at counts in the database, not people's entries.
+- **Accessibility.** Hidden steps can't be reached by keyboard until they open. The step line is read out by screen readers when it changes. Motion stops with reduced motion.
 - **Original project.** Atmos was first made for the SVA vibe coding "100 users in one week" assignment. This final continues it.
 
-## 7. AI use
+## 9. AI use
 
-I build by talking with Claude. For this spike, Claude wrote the first version of the canvas drawing and gesture code from my description of the three gestures and the Atmos look (dots, lines, planes). Claude also queried the Atmos database for counts only, not entry text, to get the retention numbers above. I chose the direction, the gestures and the test, and I'll check every result with real people myself.
+I build by talking with Claude. For this proposal, Claude measured the CSS (font sizes, radii, spacing), counted visits and posts in the Atmos database (numbers only), wrote the script that applies the tokens and the step by step check in, and took screenshots to check the result. I chose the two goals, the step order, what to keep (like the serif rule), and I'll run the test with real people myself.
