@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atmos · Make your sky (spike)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500&family=Geist+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#111112; --ink-2:#55565B; --ink-3:#8C8D92;
+    --ground:#EDEDEB; --on-ink:#FAFAF9;
+    --line:rgba(17,17,18,.09); --line-2:rgba(17,17,18,.18);
+    --panel:rgba(250,250,249,.86);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--ground);color:var(--ink);
+    font-family:Geist,system-ui,sans-serif;font-weight:400;
+    -webkit-font-smoothing:antialiased;overflow:hidden;
+    touch-action:none;-webkit-user-select:none;user-select:none}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+
+  .top{position:fixed;left:0;right:0;top:0;padding:max(18px,env(safe-area-inset-top)) 20px 0;
+    display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+  .brand{font-family:"Geist Mono",monospace;font-size:11px;letter-spacing:.04em;color:var(--ink-2)}
+  .q{font-size:22px;font-weight:300;line-height:1.25;max-width:15ch;margin-top:10px;transition:color .4s}
+  .top button{pointer-events:auto}
+
+  .bottom{position:fixed;left:0;right:0;bottom:0;padding:0 16px max(16px,env(safe-area-inset-bottom));
+    display:flex;flex-direction:column;gap:10px;align-items:center}
+  .hint{font-family:"Geist Mono",monospace;font-size:11px;color:var(--ink-2);text-align:center;
+    background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 14px;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);max-width:100%}
+  .row{display:flex;gap:8px;width:100%;max-width:420px}
+  button{font:inherit;font-size:14px;border-radius:999px;border:1px solid var(--line-2);
+    background:var(--panel);color:var(--ink);padding:12px 16px;cursor:pointer;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  button.primary{background:var(--ink);color:var(--on-ink);border-color:var(--ink);flex:1}
+  button.ghost{flex:0 0 auto}
+  button:focus-visible{outline:2px solid #3b6fd8;outline-offset:2px}
+  .icon{width:40px;height:40px;padding:0;display:grid;place-items:center;font-size:16px}
+
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--on-ink);border-top:1px solid var(--line-2);
+    border-radius:20px 20px 0 0;padding:20px 20px max(20px,env(safe-area-inset-bottom));
+    transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);
+    max-width:520px;margin:0 auto;z-index:5}
+  .sheet.open{transform:none}
+  .sheet h2{font-size:18px;font-weight:400;margin-bottom:4px}
+  .sheet p{font-size:13px;color:var(--ink-2);line-height:1.45;margin-bottom:14px}
+  .moods{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+  .moods button{border-radius:12px;padding:12px 8px;font-size:14px;background:transparent}
+  .moods button[aria-pressed=true]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+  input[type=text]{width:100%;font:inherit;font-size:16px;border:1px solid var(--line-2);border-radius:12px;
+    padding:12px 14px;margin-bottom:14px;background:transparent;color:var(--ink)}
+  .link{font-family:"Geist Mono",monospace;font-size:11px;word-break:break-all;color:var(--ink-2);
+    border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px;max-height:72px;overflow:auto;
+    -webkit-user-select:text;user-select:text}
+  .reveal{font-size:15px;line-height:1.5;margin-bottom:14px}
+  .reveal b{font-weight:500}
+
+  .controls{position:fixed;right:16px;top:calc(max(18px,env(safe-area-inset-top)) + 44px);
+    background:var(--panel);border:1px solid var(--line-2);border-radius:14px;padding:14px;
+    display:none;flex-direction:column;gap:10px;width:200px;z-index:4;
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .controls.open{display:flex}
+  .controls label{font-size:12px;color:var(--ink-2);display:flex;flex-direction:column;gap:4px}
+  .controls input{width:100%}
+  .toast{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--ink);color:var(--on-ink);
+    padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+  .toast.show{opacity:1}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<canvas id="sky" aria-label="Your sky. Drag to gather clouds, hold to make rain, flick up for sun and down for dusk."></canvas>
+
+<div class="top">
+  <div>
+    <div class="brand">Atmos · sky spike</div>
+    <div class="q" id="question">What’s the weather inside you today?</div>
+  </div>
+  <button class="icon" id="ctrlBtn" aria-expanded="false" aria-controls="controls" title="Controls without gestures">⋯</button>
+</div>
+
+<div class="controls" id="controls" role="group" aria-label="Sky controls">
+  <label>Clouds <input type="range" id="sClouds" min="0" max="100" value="0"></label>
+  <label>Rain <input type="range" id="sRain" min="0" max="100" value="0"></label>
+  <label>Light <input type="range" id="sLight" min="0" max="100" value="60"></label>
+</div>
+
+<div class="bottom" id="makeBar">
+  <div class="hint" id="hint">drag to gather clouds · hold to rain · flick up for sun, down for dusk</div>
+  <div class="row">
+    <button class="ghost" id="resetBtn">Clear</button>
+    <button class="primary" id="doneBtn">This is my sky</button>
+  </div>
+</div>
+
+<div class="bottom hidden" id="guessBar">
+  <div class="hint">Someone made this sky to show how they feel</div>
+  <div class="row"><button class="primary" id="guessOpen">How does it feel to you?</button></div>
+</div>
+
+<!-- Maker: pick the mood you meant -->
+<section class="sheet" id="sheetMood" aria-labelledby="hMood">
+  <h2 id="hMood">Which mood did you mean?</h2>
+  <p>Your friend won’t see this. They’ll guess from the sky alone.</p>
+  <div class="moods" data-group="meant"></div>
+  <div class="row"><button class="ghost" data-close>Back</button><button class="primary" id="makeLink" disabled>Make a link</button></div>
+</section>
+
+<!-- Maker: share link -->
+<section class="sheet" id="sheetShare" aria-labelledby="hShare">
+  <h2 id="hShare">Send this sky to a friend</h2>
+  <p>Ask them how it feels, without telling them the mood.</p>
+  <div class="link" id="linkText"></div>
+  <div class="row"><button class="ghost" id="againBtn">Make another</button><button class="primary" id="copyLink">Copy link</button></div>
+</section>
+
+<!-- Guesser: pick a mood -->
+<section class="sheet" id="sheetGuess" aria-labelledby="hGuess">
+  <h2 id="hGuess">How does this sky feel?</h2>
+  <p>Go with your first impression.</p>
+  <div class="moods" data-group="guess"></div>
+  <input type="text" id="word" maxlength="40" placeholder="One word for it (optional)" aria-label="One word for this sky (optional)">
+  <div class="row"><button class="primary" id="submitGuess" disabled>See what they meant</button></div>
+</section>
+
+<!-- Guesser: reveal -->
+<section class="sheet" id="sheetReveal" aria-labelledby="hReveal">
+  <h2 id="hReveal">Here’s what they meant</h2>
+  <div class="reveal" id="revealText"></div>
+  <p>Please copy this and send it back to Marin. It helps a lot.</p>
+  <div class="row"><button class="ghost" id="ownSky">Make my own</button><button class="primary" id="copyResult">Copy result</button></div>
+</section>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ---------- Setup ---------- */
+const MOODS = ["Radiant","Calm","Cozy","Foggy","Blue","Stormy"];
+const GW = 16, GH = 10;               // cloud grid: 16 columns x 10 rows
+const cv = document.getElementById("sky");
+const ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1;
+
+// The whole sky is just these numbers
+const state = {
+  grid: new Float32Array(GW * GH),    // cloud density per cell, 0..1
+  rain: 0,                            // 0..1
+  light: 0.6                          // 0 = dusk, 1 = bright sun
+};
+let interactive = true;               // false when a friend is guessing
+
+function resize(){
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener("resize", resize); resize();
+
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const mix = (c1, c2, t) => c1.map((v, i) => Math.round(lerp(v, c2[i], t)));
+const rgb = (c, a = 1) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+const horizonY = () => H * 0.78;      // clouds live above this line
+const cellW = () => W / GW;
+const cellH = () => horizonY() / GH;
+const coverage = () => state.grid.reduce((s, v) => s + v, 0) / state.grid.length;
+
+/* ---------- Gestures ---------- */
+// add cloud around a screen point, softly spread over nearby cells
+function addCloud(x, y, amount){
+  const cx = x / cellW(), cy = y / cellH();
+  for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++){
+    const d = Math.hypot(i + .5 - cx, (j + .5 - cy) * 1.3);
+    if (d < 2.2){
+      const k = j * GW + i;
+      state.grid[k] = clamp(state.grid[k] + amount * Math.exp(-d * d / 1.4));
+    }
+  }
+}
+
+let ptr = null;                        // the current touch / mouse press
+cv.addEventListener("pointerdown", e => {
+  if (!interactive) return;
+  cv.setPointerCapture(e.pointerId);
+  closeControls();
+  ptr = { x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY,
+          t0: performance.now(), moved: false, holding: false,
+          snapshot: state.grid.slice() };          // kept so a flick can undo its clouds
+  ptr.timer = setTimeout(() => { if (ptr && !ptr.moved) ptr.holding = true; }, 380);
+});
+cv.addEventListener("pointermove", e => {
+  if (!ptr) return;
+  const dx = e.clientX - ptr.x, dy = e.clientY - ptr.y;
+  if (Math.hypot(e.clientX - ptr.x0, e.clientY - ptr.y0) > 10) ptr.moved = true;
+  if (ptr.moved && !ptr.holding){
+    // drag: drop cloud along the path, more when you move slowly
+    const steps = Math.ceil(Math.hypot(dx, dy) / 8);
+    for (let s = 1; s <= steps; s++){
+      addCloud(ptr.x + dx * s / steps, ptr.y + dy * s / steps, 0.09);
+    }
+  }
+  if (ptr.holding){ ptr.x = e.clientX; ptr.y = e.clientY; return; }
+  ptr.x = e.clientX; ptr.y = e.clientY;
+});
+function endPointer(e){
+  if (!ptr) return;
+  clearTimeout(ptr.timer);
+  const dt = performance.now() - ptr.t0;
+  const dy = e.clientY - ptr.y0, dx = e.clientX - ptr.x0;
+  const isFlick = !ptr.holding && dt < 320 && Math.abs(dy) > 50 && Math.abs(dy) > Math.abs(dx) * 1.4;
+  if (isFlick){
+    state.grid.set(ptr.snapshot);                  // a flick shouldn't leave clouds behind
+    if (dy < 0){                                   // flick up: sun comes out
+      state.light = clamp(state.light + 0.22);
+      for (let k = 0; k < state.grid.length; k++) state.grid[k] *= 0.82;
+      state.rain *= 0.7;
+    } else {                                       // flick down: dusk
+      state.light = clamp(state.light - 0.22);
+    }
+  }
+  ptr = null;
+  syncSliders();
+  hideHintSoon();
+}
+cv.addEventListener("pointerup", endPointer);
+cv.addEventListener("pointercancel", endPointer);
+
+// keyboard: C adds clouds in the middle, R adds rain, arrows move the light
+addEventListener("keydown", e => {
+  if (!interactive || e.target.tagName === "INPUT") return;
+  if (e.key === "c") addCloud(W * (0.2 + Math.random() * 0.6), horizonY() * (0.2 + Math.random() * 0.5), 0.35);
+  if (e.key === "r") { state.rain = clamp(state.rain + 0.15); addCloud(W / 2, horizonY() * .35, .1); }
+  if (e.key === "ArrowUp") state.light = clamp(state.light + 0.1);
+  if (e.key === "ArrowDown") state.light = clamp(state.light - 0.1);
+  syncSliders();
+});
+
+/* ---------- Drawing ---------- */
+// fixed random offsets so each cell's dots don't jump around every frame
+const seeds = Array.from({ length: GW * GH * 14 }, () => [Math.random(), Math.random(), Math.random()]);
+const drops = Array.from({ length: 260 }, () => ({ x: Math.random(), y: Math.random(), v: .6 + Math.random() * .6 }));
+let flash = 0, t = 0, last = performance.now();
+
+function frame(now){
+  const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+
+  // holding still makes rain, and gathers a bit of cloud where you press
+  if (ptr && ptr.holding){
+    state.rain = clamp(state.rain + dt * 0.35);
+    addCloud(ptr.x, Math.min(ptr.y, horizonY() * .7), dt * 0.6);
+    syncSliders();
+  }
+
+  const cov = coverage();
+  const L = state.light;
+  const gloom = clamp(cov * 0.9 + state.rain * 0.4);   // heavy cloud and rain make it greyer
+
+  // sky: dusk navy -> pale day, pulled toward grey by gloom
+  const skyTop = mix(mix([24,26,34],[198,216,230], L), [128,132,140], gloom * 0.55);
+  const skyLow = mix(mix([52,48,62],[238,234,224], L), [160,162,166], gloom * 0.5);
+  const g = ctx.createLinearGradient(0, 0, 0, horizonY());
+  g.addColorStop(0, rgb(skyTop)); g.addColorStop(1, rgb(skyLow));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  // sun: rises with light, fades behind clouds
+  const sunY = lerp(horizonY() + 30, horizonY() * 0.28, L);
+  const sunA = clamp(L * 1.2 - 0.15) * (1 - cov * 0.75) * (1 - state.rain * 0.7);
+  if (sunA > 0.01){
+    const r = Math.min(W, H) * 0.09;
+    const sg = ctx.createRadialGradient(W * .68, sunY, 0, W * .68, sunY, r * 3.2);
+    sg.addColorStop(0, `rgba(246,206,120,${0.55 * sunA})`);
+    sg.addColorStop(1, "rgba(246,206,120,0)");
+    ctx.fillStyle = sg; ctx.fillRect(0, 0, W, H);
+    ctx.beginPath(); ctx.arc(W * .68, sunY, r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(250,224,160,${0.9 * sunA})`; ctx.fill();
+  }
+
+  // clouds: a soft plane per cell, plus a scatter of dots on top (the Atmos look)
+  const cw = cellW(), ch = cellH();
+  const drift = (t * 6) % W;
+  const cloudCol = mix(mix([70,72,82],[250,250,249], L), [96,98,106], state.rain * 0.8);
+  for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++){
+    const d = state.grid[j * GW + i];
+    if (d < 0.03) continue;
+    let x = (i + .5) * cw + drift; if (x > W + cw) x -= W + cw * 2;
+    const y = (j + .5) * ch;
+    const rr = cw * (0.8 + d * 0.9);
+    const cg = ctx.createRadialGradient(x, y, 0, x, y, rr);
+    cg.addColorStop(0, rgb(cloudCol, 0.55 * d));
+    cg.addColorStop(1, rgb(cloudCol, 0));
+    ctx.fillStyle = cg; ctx.fillRect(x - rr, y - rr, rr * 2, rr * 2);
+    const n = Math.floor(d * 14);
+    ctx.fillStyle = rgb(mix(cloudCol, [17,17,18], 0.25), 0.35 + d * 0.3);
+    for (let s = 0; s < n; s++){
+      const sd = seeds[(j * GW + i) * 14 + s];
+      ctx.fillRect(x + (sd[0] - .5) * cw * 1.6, y + (sd[1] - .5) * ch * 1.4, 1.6, 1.6);
+    }
+  }
+
+  // rain: short lines that only fall from where there is cloud
+  if (state.rain > 0.02){
+    ctx.strokeStyle = rgb(mix([90,110,140],[200,214,230], 1 - L), 0.5);
+    ctx.lineWidth = 1;
+    const count = Math.floor(drops.length * state.rain);
+    ctx.beginPath();
+    for (let k = 0; k < count; k++){
+      const dr = drops[k];
+      dr.y += dt * dr.v * (0.6 + state.rain);
+      if (dr.y > 1){ dr.y = 0; dr.x = Math.random(); }
+      const px = dr.x * W;
+      const col = Math.floor(((px - drift + W * 2) % W) / cw);
+      // find the densest cloud in this column to start rain under it
+      let top = -1, best = 0;
+      for (let j = 0; j < GH; j++){ const v = state.grid[j * GW + col]; if (v > best){ best = v; top = j; } }
+      if (best < 0.25) continue;
+      const y0 = (top + .8) * ch;
+      const py = lerp(y0, H, dr.y);
+      const len = 8 + state.rain * 14;
+      ctx.moveTo(px, py); ctx.lineTo(px - 2, py + len);
+    }
+    ctx.stroke();
+  }
+
+  // storm: lots of cloud + heavy rain sometimes flashes
+  if (cov > 0.4 && state.rain > 0.65 && Math.random() < dt * 0.6) flash = 1;
+  if (flash > 0){
+    ctx.fillStyle = `rgba(255,255,255,${0.35 * flash})`; ctx.fillRect(0, 0, W, H);
+    flash = Math.max(0, flash - dt * 6);
+  }
+
+  // ground plane and horizon hairline
+  ctx.fillStyle = rgb(mix([20,20,24],[226,226,222], L * (1 - gloom * 0.4)));
+  ctx.fillRect(0, horizonY(), W, H - horizonY());
+  ctx.fillStyle = "rgba(17,17,18,.18)"; ctx.fillRect(0, horizonY(), W, 1);
+
+  // a ring under your finger while you hold, so you can see rain building
+  if (ptr && ptr.holding){
+    ctx.beginPath(); ctx.arc(ptr.x, ptr.y, 26 + state.rain * 10, 0, Math.PI * 2 * state.rain);
+    ctx.strokeStyle = L > .5 ? "rgba(17,17,18,.5)" : "rgba(250,250,249,.6)"; ctx.lineWidth = 2; ctx.stroke();
+  }
+
+  // keep the question readable on dark skies
+  const darkSky = (L * (1 - gloom * .5)) <= 0.42;
+  document.getElementById("question").style.color = darkSky ? "#EDEDED" : "#111112";
+  document.querySelector(".brand").style.color = darkSky ? "#A2A3A8" : "#55565B";
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ---------- No-gesture controls (accessibility) ---------- */
+const sC = document.getElementById("sClouds"), sR = document.getElementById("sRain"), sL = document.getElementById("sLight");
+const ctrl = document.getElementById("controls"), ctrlBtn = document.getElementById("ctrlBtn");
+ctrlBtn.onclick = () => { const o = ctrl.classList.toggle("open"); ctrlBtn.setAttribute("aria-expanded", o); };
+function closeControls(){ ctrl.classList.remove("open"); ctrlBtn.setAttribute("aria-expanded", false); }
+function syncSliders(){ sC.value = Math.round(coverage() * 100); sR.value = Math.round(state.rain * 100); sL.value = Math.round(state.light * 100); }
+sC.oninput = () => {                       // fill the sky evenly-ish to the chosen amount
+  const v = sC.value / 100;
+  for (let k = 0; k < state.grid.length; k++){
+    const n = seeds[k * 14][2];
+    state.grid[k] = clamp(v * 1.5 - n * 0.6);
+  }
+};
+sR.oninput = () => { state.rain = sR.value / 100; };
+sL.oninput = () => { state.light = sL.value / 100; };
+
+/* ---------- Sharing: the sky lives in the link ---------- */
+function encode(meant){
+  const g = Array.from(state.grid, v => Math.round(v * 9)).join("");
+  const data = { g, r: Math.round(state.rain * 99), l: Math.round(state.light * 99), m: meant };
+  return btoa(JSON.stringify(data)).replace(/=+$/, "");
+}
+function decode(s){
+  try {
+    const d = JSON.parse(atob(s));
+    for (let k = 0; k < GW * GH; k++) state.grid[k] = (+d.g[k] || 0) / 9;
+    state.rain = d.r / 99; state.light = d.l / 99;
+    return d;
+  } catch { return null; }
+}
+
+/* ---------- Sheets, buttons and flow ---------- */
+const $ = id => document.getElementById(id);
+function openSheet(id){ document.querySelectorAll(".sheet").forEach(s => s.classList.toggle("open", s.id === id)); }
+function closeSheets(){ document.querySelectorAll(".sheet").forEach(s => s.classList.remove("open")); }
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => { closeSheets(); interactive = true; });
+function toast(msg){ const el = $("toast"); el.textContent = msg; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 1400); }
+let hintTimer; function hideHintSoon(){ clearTimeout(hintTimer); hintTimer = setTimeout(() => $("hint").style.opacity = .55, 4000); }
+
+// build the six mood buttons for a group, return a getter for the choice
+function moodGroup(name, onPick){
+  const box = document.querySelector(`.moods[data-group=${name}]`);
+  let chosen = -1;
+  MOODS.forEach((m, i) => {
+    const b = document.createElement("button");
+    b.textContent = m; b.setAttribute("aria-pressed", "false");
+    b.onclick = () => {
+      chosen = i;
+      box.querySelectorAll("button").forEach((x, k) => x.setAttribute("aria-pressed", k === i));
+      onPick(i);
+    };
+    box.appendChild(b);
+  });
+  return () => chosen;
+}
+const getMeant = moodGroup("meant", () => $("makeLink").disabled = false);
+const getGuess = moodGroup("guess", () => $("submitGuess").disabled = false);
+
+async function copy(text, msg){
+  try { await navigator.clipboard.writeText(text); toast(msg); }
+  catch { toast("Couldn’t copy, select the text instead"); }
+}
+
+// Maker flow
+$("resetBtn").onclick = () => { state.grid.fill(0); state.rain = 0; state.light = 0.6; syncSliders(); };
+$("doneBtn").onclick = () => { interactive = false; closeControls(); openSheet("sheetMood"); };
+$("makeLink").onclick = () => {
+  const url = location.origin + location.pathname + "#s=" + encode(getMeant());
+  $("linkText").textContent = url;
+  openSheet("sheetShare");
+};
+$("copyLink").onclick = () => copy($("linkText").textContent, "Link copied");
+$("againBtn").onclick = () => { closeSheets(); interactive = true; };
+
+// Guesser flow
+let shared = null;
+$("guessOpen").onclick = () => openSheet("sheetGuess");
+$("submitGuess").onclick = () => {
+  const gi = getGuess(), word = $("word").value.trim();
+  const meant = MOODS[shared.m], guess = MOODS[gi];
+  $("revealText").innerHTML = gi === shared.m
+    ? `They meant <b>${meant}</b>. You read it exactly.`
+    : `They meant <b>${meant}</b>. You felt <b>${guess}</b>.`;
+  $("copyResult").dataset.text =
+    `Atmos sky test · meant ${meant} · guessed ${guess}` + (word ? ` · word "${word}"` : "") +
+    ` · clouds ${Math.round(coverage() * 100)} rain ${Math.round(state.rain * 100)} light ${Math.round(state.light * 100)}`;
+  openSheet("sheetReveal");
+};
+$("copyResult").onclick = e => copy(e.currentTarget.dataset.text, "Result copied");
+$("ownSky").onclick = () => { location.href = location.pathname; };
+
+// If the link has a sky in it, show it to guess. Otherwise, start making.
+const m = location.hash.match(/#s=(.+)/);
+if (m && (shared = decode(m[1]))){
+  interactive = false;
+  $("makeBar").classList.add("hidden");
+  $("guessBar").classList.remove("hidden");
+  $("ctrlBtn").classList.add("hidden");
+  $("question").textContent = "Someone’s weather inside, today";
+}
+syncSliders();
+</script>
+</body>
+</html>
