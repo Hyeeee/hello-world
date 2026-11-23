@@ -37,7 +37,7 @@ For the final I want to keep Atmos but change what it's mainly for. Right now it
 
 **1. Make the journal the main thing**
 - The first screen opens on today's entry, not the temperature.
-- The forecast, timeline and weather modes fold away or move back. The globe stays as a "Under the same sky" view of other people's entries.
+- The forecast, timeline and weather modes fold away or move back. The globe stays as an "Under the same sky" view of other people's entries.
 - Each entry saves the weather automatically, like "Nov 23, New York, Cloudy 48°, I feel Foggy."
 
 **2. More ways to express how you feel**
