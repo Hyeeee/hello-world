@@ -3,7 +3,7 @@
 Hello World final project · Week 11
 Marin Chung
 
-My main direction is **Atmos as a daily mood journal**. I also have four other directions at the end, so I can talk them through with you and pick one. See [Other directions](#other-directions).
+My main direction is **Atmos as a daily mood journal**. I also have four other directions at the end, each aimed at a real problem in New York, so I can talk them through with you and pick one. See [Other directions](#other-directions).
 
 **Atmos:** https://atmos-cd-347fa3dcbb.netlify.app/
 
@@ -101,58 +101,60 @@ I can't prove that people will use it every day in three weeks, so I'm testing w
 
 ## Other directions
 
-These are four other ideas I'd also be happy to make. Each one uses the same kind of plan as Atmos, so they're easy to compare.
+These are four other ideas, all aimed at a real problem people in New York have. Each one uses the same kind of plan as Atmos, so they're easy to compare.
 
-### B. Bungeoppang stall, a slow multiplayer street food game
+### B. Step free subway, routes that know which elevators are broken
 
-**The idea.** A calm web game where you open a 붕어빵 (Korean fish shaped pastry) stall on a map of Seoul or set out as a customer and buy from other people's stalls. There's no timer or score. You pour batter, add red bean or custard and wait for it to turn golden.
-**Who it's for.** Anyone who misses winter street food in Korea, and people who've never tried it.
-**Why me.** I already made a one button 붕어빵 game for Week 7. This takes it further, and the culture is something I know well.
-**Must.** Making 붕어빵 with touch on a phone, one shared map where you can see other stalls, and buying from someone else.
-**Riskiest unknown.** Whether real time multiplayer works smoothly on phones.
-**Spike.** Two phones that show each other's stall and a sale happening live, using Supabase.
+**The problem.** If you use a wheelchair, push a stroller or carry heavy luggage, one broken elevator can make a whole station useless. You often only find out when you get there.
+**The idea.** You pick where you're going and it shows a step free route that skips stations with an elevator out right now, and says plainly what to do if one breaks on the way.
+**Who it's for.** Wheelchair users, parents with strollers, older riders and anyone carrying something heavy.
+**Data.** The MTA publishes live elevator and escalator outages for developers.
+**Must.** Live elevator status for the stations on a route, a clear warning when one is out, and a simple other way to go.
+**Riskiest unknown.** Whether I can turn the outage feed into routes that are right, not just a list of broken elevators.
+**Spike.** Pull today's outage feed and check it by hand against three trips I actually take.
 
-### C. Leather pattern maker, a small design tool
+### C. Fridge now, what's inside a community fridge right now
 
-**The idea.** A tool where you set the size of a card wallet or pouch and it draws the sewing pattern for you, with stitch holes and seam allowance, ready to print at real size.
-**Who it's for.** People starting leather craft, like I was when I began Lof Archive.
-**Why me.** I taught myself leather craft and made my own label, so I know where beginners get stuck. It's also the "build a design tool" path from the course.
-**Must.** Two or three item types, size controls, a live preview and a print at 100% scale.
-**Riskiest unknown.** Whether the printed pattern is accurate enough to actually cut and sew.
-**Spike.** Make a card wallet pattern, print it, cut it from scrap leather and measure where it's off.
+**The problem.** New York has community fridges where anyone can leave or take food. Maps show where they are, but not whether there's anything in them, so people walk there and find them empty.
+**The idea.** Anyone passing by snaps a photo and taps what's inside. The map shows each fridge as full, some or empty, and how long ago someone checked.
+**Who it's for.** People who rely on the fridges, and neighbors who want to know where to drop off food.
+**Must.** A map of fridges, a 10 second update with a photo, and how fresh each update is.
+**Riskiest unknown.** Whether people will bother to update it, since the whole thing depends on that.
+**Spike.** Put a QR sign on one fridge near me for a few days and count how many updates come in.
 
-### D. Hangul blocks, an interactive type study
+### D. Notice in my language, posted notices made clear
 
-**The idea.** A playful way to see how Korean letters stack into syllable blocks. You drag consonants and vowels together and the block reshapes itself live, with variable type and motion.
-**Who it's for.** Classmates and friends who see Hangul all the time but don't know how it's built.
-**Why me.** I'm a native speaker and a designer, so I can explain the system and care about how it looks. It's the typography and generative graphics path.
-**Must.** Building any basic syllable by dragging, smooth reshaping when a letter is added, and a short guided first try.
-**Riskiest unknown.** Whether the block can reshape cleanly for every combination without looking broken.
-**Spike.** Ten common syllables built in p5.js or SVG, then checking which ones look wrong.
+**The problem.** Building notices about water shutoffs, heat outages, repairs or rule changes are usually posted only in English, in dense language. Neighbors who don't read English well can miss things that affect their home.
+**The idea.** Take a photo of a notice and get a short, plain summary in your language, with the date, what changes and what you need to do.
+**Who it's for.** Tenants with limited English, and anyone who finds these notices hard to read.
+**Must.** Photo to text, a plain summary in a few languages, and a clear line that the original notice is still what counts.
+**Riskiest unknown.** Whether the summary gets dates and instructions right every time, since a wrong date could cause real harm.
+**Spike.** Ten real notices, with the summary checked against the original by me and a native speaker of each language.
 
-### E. Interview rehearsal partner
+### E. Heat log, a simple record when your apartment is too cold
 
-**The idea.** A small voice app for practicing interview answers out loud. You answer a common design interview question, then see your answer as text with the filler words, long pauses and the parts you rushed.
-**Who it's for.** People practicing interviews in a second language, like me getting ready for summer internships.
-**Why me.** It's a real problem I have right now, and I'd be the first tester. It's the voice and character path.
-**Must.** One question at a time, record and transcribe, and a simple view of fillers and pace.
-**Riskiest unknown.** Whether speech recognition handles a non native accent well enough to be useful and not discouraging.
-**Spike.** Record five of my own answers with the browser's speech recognition and check how many words it gets wrong.
+**The problem.** In New York's heat season, landlords have to keep apartments at a minimum temperature ([HPD heat rules](https://www.nyc.gov/site/hpd/services-and-information/heat-and-hot-water-information.page)). Tenants without heat are told to keep a log of indoor temperatures for a complaint, but the city's log is a paper form.
+**The idea.** A phone log where you tap in your indoor temperature. It saves the outdoor weather automatically, shows when the legal minimum wasn't met, and makes a clean summary for 311 or HPD.
+**Who it's for.** Tenants dealing with no heat, especially in older buildings.
+**Why me.** It uses what I already built in Atmos, like live weather for a place and a log over time.
+**Must.** Quick indoor temperature entries, outdoor weather added automatically, rule check by time of day, and a summary to share.
+**Riskiest unknown.** Whether the summary is clear and trusted enough to actually help a complaint.
+**Spike.** Turn the paper log into the app's summary for one sample week and ask two tenants whether they'd use it.
 
 ### How they compare
 
-| | A. Atmos journal | B. Bungeoppang stall | C. Leather patterns | D. Hangul blocks | E. Interview partner |
+| | A. Atmos journal | B. Step free subway | C. Fridge now | D. Notice in my language | E. Heat log |
 |---|---|---|---|---|---|
-| Course path | Website or small app | Game | Design tool | Typography | Voice |
-| Starting point | Existing app with real users | Week 7 game | New | New | New |
-| Riskiest part | Making it feel like a journal | Real time multiplayer | Print accuracy | Every letter combination | Accent recognition |
-| Easy to test with people | Yes | Yes, needs 2+ people | Needs leather and time | Yes | Yes |
+| Who it helps | People building a daily habit of noticing how they feel | Riders who can't use stairs | People who rely on community fridges | Tenants with limited English | Tenants without heat |
+| Starting point | Existing app with real users | New, public MTA data | New | New | New, reuses Atmos parts |
+| Riskiest part | Making it feel like a journal | Right routes from outage data | Whether people update it | Accurate summaries | Trust in the summary |
+| Easy to test with people | Yes | Needs riders who use elevators | Needs time at a real fridge | Needs native speakers | Needs tenants |
 | Fits in three weeks | Yes | Tight | Yes | Yes | Yes |
 
 ### What I'd like your thoughts on
-- Is improving an existing project like Atmos enough for a final, or is a new project better?
-- Which riskiest part sounds most worth learning from?
-- Is B too big for three weeks if I cut multiplayer to a Should?
+- Is improving an existing project like Atmos enough for a final, or is a project with clear social value better?
+- For B, C, D and E, I'd be designing for people whose situation isn't mine. How should I find and test with them in three weeks, and is that okay to do for a class?
+- D and E deal with homes and rules, so a mistake could hurt someone. How careful does a class project need to be there?
 
 ## Working notes
 
