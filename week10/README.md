@@ -1,11 +1,13 @@
-# Atmos final proposal
+# Final project proposal
 
-Hello World final project · Week 11 (Nov 23)
+Hello World final project · Week 11
 Marin Chung
+
+My main direction is **Atmos as a daily mood journal**. I also have four other directions at the end, so I can talk them through with you and pick one. See [Other directions](#other-directions).
 
 **Atmos:** https://atmos-cd-347fa3dcbb.netlify.app/
 
-## The project
+## A. Atmos as a daily mood journal (main)
 
 Atmos is a small web app I made in September. It puts live weather and mood journaling in the same place and asks one question, *What's the weather inside you today?* Everyone's answers show up on a shared globe.
 
@@ -96,6 +98,61 @@ I can't prove that people will use it every day in three weeks, so I'm testing w
 | 3 | | | | | | |
 
 **For the prototype (Nov 30).** I'll do the same test with the journal first version and compare.
+
+## Other directions
+
+These are four other ideas I'd also be happy to make. Each one uses the same kind of plan as Atmos, so they're easy to compare.
+
+### B. Bungeoppang stall, a slow multiplayer street food game
+
+**The idea.** A calm web game where you open a 붕어빵 (Korean fish shaped pastry) stall on a map of Seoul or set out as a customer and buy from other people's stalls. There's no timer or score. You pour batter, add red bean or custard and wait for it to turn golden.
+**Who it's for.** Anyone who misses winter street food in Korea, and people who've never tried it.
+**Why me.** I already made a one button 붕어빵 game for Week 7. This takes it further, and the culture is something I know well.
+**Must.** Making 붕어빵 with touch on a phone, one shared map where you can see other stalls, and buying from someone else.
+**Riskiest unknown.** Whether real time multiplayer works smoothly on phones.
+**Spike.** Two phones that show each other's stall and a sale happening live, using Supabase.
+
+### C. Leather pattern maker, a small design tool
+
+**The idea.** A tool where you set the size of a card wallet or pouch and it draws the sewing pattern for you, with stitch holes and seam allowance, ready to print at real size.
+**Who it's for.** People starting leather craft, like I was when I began Lof Archive.
+**Why me.** I taught myself leather craft and made my own label, so I know where beginners get stuck. It's also the "build a design tool" path from the course.
+**Must.** Two or three item types, size controls, a live preview and a print at 100% scale.
+**Riskiest unknown.** Whether the printed pattern is accurate enough to actually cut and sew.
+**Spike.** Make a card wallet pattern, print it, cut it from scrap leather and measure where it's off.
+
+### D. Hangul blocks, an interactive type study
+
+**The idea.** A playful way to see how Korean letters stack into syllable blocks. You drag consonants and vowels together and the block reshapes itself live, with variable type and motion.
+**Who it's for.** Classmates and friends who see Hangul all the time but don't know how it's built.
+**Why me.** I'm a native speaker and a designer, so I can explain the system and care about how it looks. It's the typography and generative graphics path.
+**Must.** Building any basic syllable by dragging, smooth reshaping when a letter is added, and a short guided first try.
+**Riskiest unknown.** Whether the block can reshape cleanly for every combination without looking broken.
+**Spike.** Ten common syllables built in p5.js or SVG, then checking which ones look wrong.
+
+### E. Interview rehearsal partner
+
+**The idea.** A small voice app for practicing interview answers out loud. You answer a common design interview question, then see your answer as text with the filler words, long pauses and the parts you rushed.
+**Who it's for.** People practicing interviews in a second language, like me getting ready for summer internships.
+**Why me.** It's a real problem I have right now, and I'd be the first tester. It's the voice and character path.
+**Must.** One question at a time, record and transcribe, and a simple view of fillers and pace.
+**Riskiest unknown.** Whether speech recognition handles a non native accent well enough to be useful and not discouraging.
+**Spike.** Record five of my own answers with the browser's speech recognition and check how many words it gets wrong.
+
+### How they compare
+
+| | A. Atmos journal | B. Bungeoppang stall | C. Leather patterns | D. Hangul blocks | E. Interview partner |
+|---|---|---|---|---|---|
+| Course path | Website or small app | Game | Design tool | Typography | Voice |
+| Starting point | Existing app with real users | Week 7 game | New | New | New |
+| Riskiest part | Making it feel like a journal | Real time multiplayer | Print accuracy | Every letter combination | Accent recognition |
+| Easy to test with people | Yes | Yes, needs 2+ people | Needs leather and time | Yes | Yes |
+| Fits in three weeks | Yes | Tight | Yes | Yes | Yes |
+
+### What I'd like your thoughts on
+- Is improving an existing project like Atmos enough for a final, or is a new project better?
+- Which riskiest part sounds most worth learning from?
+- Is B too big for three weeks if I cut multiplayer to a Should?
 
 ## Working notes
 
