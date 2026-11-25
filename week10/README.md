@@ -3,13 +3,14 @@
 Hello World final project · Week 11
 Marin Chung
 
-I have five directions I'd be happy to make. I haven't picked one yet, so I'd like to talk them through with you and choose. Each one uses the same plan, the problem, the idea, who it's for, what I must build, the riskiest unknown and a small experiment, so they're easy to compare.
+I have six directions I'd be happy to make. I haven't picked one yet, so I'd like to talk them through with you and choose. Each one uses the same plan, the problem, the idea, who it's for, what I must build, the riskiest unknown and a small experiment, so they're easy to compare.
 
 - **A. Atmos, a mood journal for noticing how you feel** (mental wellbeing)
 - **B. Stairs only, my commute without stairs** (accessibility)
 - **C. Warmer in Manhattan, measuring my own commute** (environment)
 - **D. Tip screen, the pressure behind the buttons** (economy and design)
 - **E. Coffee index, the price of one coffee by neighborhood** (economy)
+- **F. Sketch first, does seeing AI images first narrow our ideas?** (AI and how I design)
 
 ### A. Atmos, a mood journal for noticing how you feel
 
@@ -61,21 +62,39 @@ I have five directions I'd be happy to make. I haven't picked one yet, so I'd li
 **Riskiest unknown.** Whether coffee prices alone say something meaningful, or if it needs one more thing like rent to make sense.
 **Spike.** Collect prices from eight places on my way to school and see if a pattern shows up.
 
+### F. Sketch first, does seeing AI images first narrow our ideas?
+
+**The question.** AI makes it easy to see ten images before I've had a single idea of my own. Does seeing AI images first make designers stick to them and come up with fewer, more similar ideas?
+**What research says.** Designers know about fixation, getting stuck on the first examples you see. A 2024 CHI study found that people who used an AI image generator while ideating had more fixation, fewer ideas and less variety than people who didn't ([Wadinambiarachchi et al., 2024](https://arxiv.org/abs/2403.11164)). I want to see if the same thing happens with my classmates and a real design brief.
+**My study.** Two groups get the same brief and 10 minutes to sketch.
+- Group A looks at AI images for the brief first, then sketches.
+- Group B sketches first, then sees the AI images.
+I compare how many ideas each person makes, how different the ideas are from each other and from the AI images, and how happy people are with their best idea.
+**The website.** Two parts.
+- **What I found.** The sketches from both groups side by side, so you can see the difference yourself, with the numbers and short quotes from the people who drew them.
+- **What I'd design.** A small "Sketch first" tool based on the findings. Before it shows you AI images, it asks for three ideas of your own, then puts yours and the AI's next to each other so you can choose, mix or keep going.
+**Who it's for.** Designers and students who use AI every day and want to keep their own ideas in the process.
+**Must.** The study with at least 8 people, the side by side results page, and a working Sketch first flow.
+**Riskiest unknown.** Whether a small class study shows a clear difference, or whether people's skill matters more than the order.
+**Spike.** Four classmates, two in each group, one brief. Count ideas and see if a difference shows up before running the full study.
+**Care.** Sketches and quotes only go on the site with permission, and people can stay anonymous.
+
 ### How they compare
 
-| | A. Atmos | B. Stairs only | C. Warmer in Manhattan | D. Tip screen | E. Coffee index |
-|---|---|---|---|---|---|
-| Area | Mental wellbeing | Accessibility | Environment | Economy and design | Economy |
-| Starting point | Existing app with real users | Public MTA list | My own measurements | Photos I collect | Prices I collect |
-| Riskiest part | Helps reflection, not just cute | Respectful, not a game | Sensor accuracy | Acting like real life | Whether coffee says enough |
-| Easy to test with classmates | Yes | Yes | Yes | Yes | Yes |
-| Fits in three weeks | Yes | Yes | Yes, if I start measuring now | Yes | Yes |
+| | A. Atmos | B. Stairs only | C. Warmer in Manhattan | D. Tip screen | E. Coffee index | F. Sketch first |
+|---|---|---|---|---|---|---|
+| Area | Mental wellbeing | Accessibility | Environment | Economy and design | Economy | AI and design process |
+| Starting point | Existing app with real users | Public MTA list | My own measurements | Photos I collect | Prices I collect | A study I run with classmates |
+| Riskiest part | Helps reflection, not just cute | Respectful, not a game | Sensor accuracy | Acting like real life | Whether coffee says enough | A clear difference in a small study |
+| Easy to test with classmates | Yes | Yes | Yes | Yes | Yes | Yes |
+| Fits in three weeks | Yes | Yes | Yes, if I start measuring now | Yes | Yes | Yes |
 
 ### What I'd like your thoughts on
 - Which of these feels most worth spending three weeks on, and which riskiest part would I learn the most from?
 - For A, is growing an existing project enough for a final? And how careful should a class project be with mental health?
 - For B, how do I make sure it's respectful, and who could I ask for feedback?
 - For C, is my own measurement enough evidence, or should I add public data?
+- For F, is a study with about 8 classmates enough, and is it okay to run it during class time?
 
 ## Working notes
 
