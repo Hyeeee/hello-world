@@ -82,7 +82,7 @@ I have six directions I'd be happy to make. I haven't picked one yet, so I'd lik
 
 ### How they compare
 
-| | A. Atmos | B. Stairs only | C. Warmer in Manhattan | D. Tip screen | E. Coffee index | F. Sketch first |
+| | A. Atmos | B. Stairs only | C. Warmer in Manhattan | D. Tip screen | E. Coffee index | F. Who decided? |
 |---|---|---|---|---|---|---|
 | Area | Mental wellbeing | Accessibility | Environment | Economy and design | Economy | AI and how I decide |
 | Starting point | Existing app with real users | Public MTA list | My own measurements | Photos I collect | Prices I collect | My own Claude conversations |
