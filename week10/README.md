@@ -3,7 +3,7 @@
 Hello World final project · Week 11
 Marin Chung
 
-My main direction is **Atmos as a daily mood journal**. I also have four other directions at the end that help with small everyday problems, so I can talk them through with you and pick one. See [Other directions](#other-directions).
+My main direction is **Atmos as a daily mood journal**. I also have four other directions at the end, about accessibility, the environment and money in everyday life, so I can talk them through with you and pick one. See [Other directions](#other-directions).
 
 **Atmos:** https://atmos-cd-347fa3dcbb.netlify.app/
 
@@ -101,57 +101,61 @@ I can't prove that people will use it every day in three weeks, so I'm testing w
 
 ## Other directions
 
-These are four other ideas that help with small, everyday problems. I picked ones that don't depend on live outside data, that classmates and friends can test, and that fit in three weeks. Each one uses the same kind of plan as Atmos, so they're easy to compare.
+These are four other ideas, one about accessibility, one about the environment and two about money in everyday life. Each starts from something I noticed living in New York, uses data that's public or that I can collect myself, and fits in three weeks. They use the same kind of plan as Atmos, so they're easy to compare.
 
-### B. Which bin, a quick recycling helper
+### B. Stairs only, my commute without stairs
 
-**The problem.** New York's recycling rules are confusing. Is a pizza box paper? Does a coffee cup go in recycling? Most people guess, and a lot of recycling ends up in the trash or the wrong bin.
-**The idea.** Type or tap an item and it tells you which bin it goes in, blue, green or brown, with a short reason. Things you look up often are saved for next time.
-**Who it's for.** Anyone living in New York, especially people who just moved here.
-**Must.** Search for about 50 common items, a clear bin answer with a picture, and the reason in one line.
-**Riskiest unknown.** Whether people find it faster than just guessing, so they'd actually use it.
-**Spike.** Ten classmates sort ten tricky items first by guessing, then with the app. Compare how many they got right.
+**The problem.** Many New York subway stations still have no elevator. If you use a wheelchair, push a stroller or can't do stairs, a lot of the map just isn't there for you, and most riders never notice.
+**The idea.** Pick a trip you take every day. The map redraws it as if you can't use stairs. Stations without step free access fade out one by one, and it shows how much longer the trip gets or whether you can make it at all.
+**Who it's for.** Riders who have never thought about it, so they can feel the difference, and people who need step free trips and want to plan one.
+**Data.** The MTA publishes a list of subway stations with which ones are ADA accessible ([MTA Subway Stations](https://catalog.data.gov/dataset/mta-subway-stations)). It's a fixed list, so no live data is needed.
+**Must.** A map of my own line and a few common trips, accessible stations marked, the "without stairs" view, and the extra time or a clear "you can't get there" moment.
+**Riskiest unknown.** Whether it makes people feel the problem without turning disability into a game.
+**Spike.** Map my own trip from Long Island City to SVA both ways and show it to three classmates. Ask what they noticed and whether it felt respectful. I'd also like to show it to someone who uses a wheelchair or a stroller.
 
-### C. Borrow board, share things with your neighbors
+### C. Warmer in Manhattan, measuring my own commute
 
-**The problem.** Most of us own a drill or a ladder we use twice a year, and the person next door buys the same one. It wastes money and space.
-**The idea.** A simple board for one building or one class. You list things you're happy to lend, and others can ask to borrow them and mark when they're returned.
-**Who it's for.** People in the same building, dorm or class.
-**Must.** List an item with a photo, ask to borrow it, and mark it as lent and returned.
-**Riskiest unknown.** Whether people feel comfortable lending to neighbors they don't know well.
-**Spike.** Try it with our class for a week and see what people list and what they borrow.
+**The question.** I live in Long Island City, and every time I get to Manhattan, especially in winter, it feels warmer. Is that real, and why?
+**What I know so far.** It's probably the urban heat island effect. Dense buildings and pavement hold heat and buildings leak heat outside, so very built up areas can stay warmer, even at night and in winter ([NYC Health](https://a816-dohbesp.nyc.gov/INDICATORPUBLIC/data-stories/urban-heat-island)). Long Island City is open and next to the river, so wind might also make it feel colder.
+**The idea.** I carry a small temperature sensor (from Physical Computing) on my commute from home to SVA and log the temperature along the way. Then I make an interactive page that shows my measured line next to the official forecast, with the reasons it changes, like building density, trees and the river.
+**Who it's for.** Anyone who's felt this and wondered, and people interested in how cities shape heat.
+**Must.** Real measurements from at least five commutes, a map of the route colored by temperature, and short explanations at the points where it changes.
+**Riskiest unknown.** Whether a cheap sensor is accurate enough to show a real difference, and not just my body heat or the subway.
+**Spike.** Log two commutes this week and compare the readings with the forecast for each neighborhood. If the difference is bigger than the sensor's error, the project works.
 
-### D. Use it first, less food thrown away at home
+### D. Tip screen, the pressure behind the buttons
 
-**The problem.** Food goes bad in the back of the fridge because we forget what we bought.
-**The idea.** After grocery shopping, you add items with a quick tap. The app shows what to use first, with a gentle reminder before something goes bad.
-**Who it's for.** People who cook at home, roommates sharing a fridge, students.
-**Must.** Quick add with common items, a "use first" list sorted by days left, and marking things as eaten or thrown away.
-**Riskiest unknown.** Whether adding food is fast enough that people keep doing it after the first day.
-**Spike.** Three friends log their groceries for five days. I count how many items they add and when they stop.
+**The problem.** Almost every café tablet now asks for 20%, 25% or 30%, even for a drip coffee. It's confusing, especially if you're new to the US, and a lot of it is design. The default, the order of the buttons and how hard "No tip" is to find all push you.
+**The idea.** I collect real tip screens and rebuild them. You go through a few of them as a customer, then it shows you what nudged you, what other people chose, and where tips actually go in different kinds of places.
+**Who it's for.** Anyone who's felt awkward at the tablet, and designers who make these screens.
+**Why me.** I'm a UX designer, so I can point out the design patterns, and I'm still learning how tipping works here.
+**Must.** Five to eight rebuilt tip screens, a short reveal of the nudges in each, and a summary of what people picked.
+**Riskiest unknown.** Whether people act the way they would in real life when it's only a simulation.
+**Spike.** Photograph ten tip screens around school, rebuild two, and have five classmates go through them. Compare their choices with what they say they usually tip.
 
-### E. Give it away, where your old things can go
+### E. Coffee index, the price of one coffee by neighborhood
 
-**The problem.** When you have clothes, books or furniture you don't need, it's hard to know where to take them, so a lot of it just goes in the trash.
-**The idea.** Pick what you have and roughly where you live, and it suggests a few places to donate or drop it off, with what each place takes.
-**Who it's for.** People moving, cleaning out a closet, or graduating.
-**Must.** About five categories, a short list of places in each with what they accept, and a simple map.
-**Riskiest unknown.** Whether a short, curated list is enough, since I'd put the places in by hand.
-**Spike.** Collect 15 places for clothes and books, then ask five people with something to give whether they'd go to one of them.
+**The problem.** The same plain coffee can cost very different amounts a few stops apart. That gap says something about rent, who a neighborhood is for and how it's changing.
+**The idea.** I collect the price of a plain drip coffee at 15 to 20 cafés and delis in Long Island City, Astoria and Manhattan, and put them on a map. You can compare new cafés with old delis, and see it as minutes of work at minimum wage.
+**Who it's for.** People curious about cost of living and how neighborhoods change.
+**Must.** At least 15 real prices with photos, a map, a simple comparison view, and the date each price was collected.
+**Riskiest unknown.** Whether coffee prices alone say something meaningful, or if it needs one more thing like rent to make sense.
+**Spike.** Collect prices from eight places on my way to school and see if a pattern shows up.
 
 ### How they compare
 
-| | A. Atmos journal | B. Which bin | C. Borrow board | D. Use it first | E. Give it away |
+| | A. Atmos journal | B. Stairs only | C. Warmer in Manhattan | D. Tip screen | E. Coffee index |
 |---|---|---|---|---|---|
-| Helps with | Noticing how you feel each day | Recycling right | Sharing instead of buying | Food waste | Donating instead of throwing away |
-| Starting point | Existing app with real users | New | New | New | New |
-| Data | Already have | A list I write | What people add | What people add | A list I write |
-| Riskiest part | Making it feel like a journal | Faster than guessing | Trusting neighbors | Adding food quickly | A short list being enough |
+| Area | Wellbeing | Accessibility | Environment | Economy and design | Economy |
+| Starting point | Existing app with real users | Public MTA list | My own measurements | Photos I collect | Prices I collect |
+| Riskiest part | Making it feel like a journal | Respectful, not a game | Sensor accuracy | Acting like real life | Whether coffee says enough |
 | Easy to test with classmates | Yes | Yes | Yes | Yes | Yes |
+| Fits in three weeks | Yes | Yes | Yes, if I start measuring now | Yes | Yes |
 
 ### What I'd like your thoughts on
 - Is improving an existing project like Atmos enough for a final, or is a new project better?
-- Which of these feels most worth making in three weeks?
+- For B, how do I make sure it's respectful, and who could I ask for feedback?
+- For C, is my own measurement enough evidence for a class project, or should I add public data?
 
 ## Working notes
 
