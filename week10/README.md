@@ -10,7 +10,7 @@ I have six directions I'd be happy to make. I haven't picked one yet, so I'd lik
 - **C. Warmer in Manhattan, measuring my own commute** (environment)
 - **D. Tip screen, the pressure behind the buttons** (economy and design)
 - **E. Coffee index, the price of one coffee by neighborhood** (economy)
-- **F. Who decided? What I give up when I design with AI** (AI and how I decide)
+- **F. Decision x-ray, see how you decide when you design with AI** (AI and how we decide)
 
 ### A. Atmos, a mood journal for noticing how you feel
 
@@ -62,31 +62,34 @@ I have six directions I'd be happy to make. I haven't picked one yet, so I'd lik
 **Riskiest unknown.** Whether coffee prices alone say something meaningful, or if it needs one more thing like rent to make sense.
 **Spike.** Collect prices from eight places on my way to school and see if a pattern shows up.
 
-### F. Who decided? What I give up when I design with AI
+### F. Decision x-ray, see how you decide when you design with AI
 
-**The question.** I build most of my projects by talking with Claude. It's fast, but I've started to notice I'm not always the one deciding. When I design with AI, which decisions do I actually make, which ones does the AI make quietly, and what does that cost me?
-**Why AI is different.** Working with a person or a reference image is not the same as working with AI. AI makes things that look finished, very fast, so it's easy to accept "good enough." It fills in everything I didn't ask for, like spacing, fonts and wording, so many decisions happen without me noticing. It also tends to agree with me, so my ideas rarely get pushed back. A 2025 study found that knowledge workers who trusted AI more did less critical thinking of their own ([Lee et al., CHI 2025](https://www.microsoft.com/en-us/research/?p=1135061)). I want to look at this in my own design work.
-**My study.** I use my own projects as the data.
-- I take Atmos and list around 40 visible design choices, like the layout, the fonts, the six moods, the copy and the colors.
-- For each one I go back through my Claude conversations and mark who decided it. I asked for it, AI suggested it and I agreed, or AI did it and I never noticed.
-- I also mark the moments where AI just agreed with me, where I changed my mind because of it, and the parts I still can't explain myself.
-- One clue is already there. When I counted Atmos's styles I found 22 font sizes and 13 corner radius values. I never chose most of those. They piled up quietly.
-**The website.** Two parts.
-- **Decision x-ray.** Atmos with a toggle. Turn it on and every part is colored by who decided it. Click a part to see the moment in the conversation where it happened.
-- **What I'd change.** Based on what I find, a small way of working I'd design for myself and other designers, like a decision log or a short check before accepting an AI result. I'd use it on a small new piece and compare.
-**Who it's for.** Designers who use AI every day, and anyone curious about who is really making the choices.
-**Must.** At least 40 traced decisions from Atmos, the x-ray view, a summary of the patterns and limits I found, and one tested change to how I work.
-**Riskiest unknown.** Whether my conversation history is complete enough to trace each decision, and whether I can judge my own process honestly.
-**Spike.** Trace 15 parts of Atmos back to the conversations this week and see how many I can actually place.
-**Care.** The data is my own conversations, and I'll only show parts I'm comfortable sharing.
+**The question.** More and more designers build by talking with AI. It's fast, but it's hard to tell which decisions are really yours. When you design with AI, which choices do you make, which ones does the AI make quietly, and how often do you just accept what it gives you?
+**Why AI is different.** AI makes things that look finished, very fast, so it's easy to accept "good enough." It fills in everything you didn't ask for, like spacing, fonts and wording, so many decisions happen without you noticing. It also tends to agree with you, so your ideas rarely get pushed back. A 2025 study found that knowledge workers who trusted AI more did less critical thinking of their own ([Lee et al., CHI 2025](https://www.microsoft.com/en-us/research/?p=1135061)). I noticed this in my own work too. My Atmos app ended up with 22 font sizes and 13 corner radius values, and I never chose most of them.
+**The idea.** A website where you bring your AI conversation from a project, like an exported Claude or ChatGPT chat, plus a few screenshots of what you made. It goes through the conversation and shows you how you decided.
+- Every decision gets marked as **you asked for it**, **AI suggested it and you agreed**, or **AI did it and you never mentioned it**.
+- It also finds the moments where AI just agreed with you, where you pushed back, and where you changed your mind.
+- AI suggests these labels, but you confirm or fix each one, so the final call stays with you.
+**What you get.**
+- **Your decision profile.** For example, "You accepted 7 out of 10 suggestions without changes. Most of the quiet decisions were spacing and wording."
+- **A timeline** of the project showing where your decisions and AI's decisions happened.
+- **An x-ray of your screenshots.** You tag parts of the screen and they're colored by who decided them, with a link back to that moment in the chat.
+**Who it's for.** Designers and students who use AI every day and want to see their own habits, like my classmates.
+**Must.** Upload or paste a conversation, decisions labeled with your confirmation, the decision profile and the timeline.
+**Should.** The screenshot x-ray.
+**Nice.** Comparing your profile with other people's, anonymously.
+**Riskiest unknown.** Whether AI can label "who decided" accurately enough that people trust the result. It would be ironic if the tool made the same quiet decisions it's trying to reveal.
+**Spike.** Take one of my own conversations, label 100 turns by hand, then have AI label the same turns and see how often we agree.
+**Test.** Three or four classmates bring a real conversation from one of their projects. I ask whether their profile feels true, and what surprised them.
+**Care.** Conversations can be personal. Nothing is saved unless the person chooses to share it, and they can remove anything before analysis.
 
 ### How they compare
 
-| | A. Atmos | B. Stairs only | C. Warmer in Manhattan | D. Tip screen | E. Coffee index | F. Who decided? |
+| | A. Atmos | B. Stairs only | C. Warmer in Manhattan | D. Tip screen | E. Coffee index | F. Decision x-ray |
 |---|---|---|---|---|---|---|
-| Area | Mental wellbeing | Accessibility | Environment | Economy and design | Economy | AI and how I decide |
-| Starting point | Existing app with real users | Public MTA list | My own measurements | Photos I collect | Prices I collect | My own Claude conversations |
-| Riskiest part | Helps reflection, not just cute | Respectful, not a game | Sensor accuracy | Acting like real life | Whether coffee says enough | Tracing decisions honestly |
+| Area | Mental wellbeing | Accessibility | Environment | Economy and design | Economy | AI and how we decide |
+| Starting point | Existing app with real users | Public MTA list | My own measurements | Photos I collect | Prices I collect | People's own AI conversations |
+| Riskiest part | Helps reflection, not just cute | Respectful, not a game | Sensor accuracy | Acting like real life | Whether coffee says enough | AI labeling decisions accurately |
 | Easy to test with classmates | Yes | Yes | Yes | Yes | Yes | Yes |
 | Fits in three weeks | Yes | Yes | Yes, if I start measuring now | Yes | Yes | Yes |
 
@@ -95,7 +98,7 @@ I have six directions I'd be happy to make. I haven't picked one yet, so I'd lik
 - For A, is growing an existing project enough for a final? And how careful should a class project be with mental health?
 - For B, how do I make sure it's respectful, and who could I ask for feedback?
 - For C, is my own measurement enough evidence, or should I add public data?
-- For F, is studying my own process enough for a final, or should I add other designers' experience too?
+- For F, can I use the course's AI access for the labeling, and is it okay to ask classmates for their conversations?
 
 ## Working notes
 
